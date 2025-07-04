@@ -200,10 +200,7 @@ const compat = {
   features,
 };
 
-// For ES6 modules
-export default compat;
-
-// For backward compatibility with scripts
+// Make available globally for content scripts
 if (typeof window !== 'undefined') {
   window.browserCompat = compat;
 }

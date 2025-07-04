@@ -35,8 +35,8 @@ async function launchBrowserWithExtension(browserType = 'chrome') {
 }
 
 // Test both Chrome and Firefox.
+// Note: Firefox e2e testing with Puppeteer requires additional setup that may not work in CI
 ['chrome'].forEach((browserType) => {
-  // Firefox e2e testing requires additional setup
   describe(`Extension Loading (${browserType})`, () => {
     let browser;
     let page;
