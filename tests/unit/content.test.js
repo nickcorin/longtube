@@ -105,47 +105,57 @@ describe('LongTube Content Script', () => {
 
   describe('Redirect Logic', () => {
     test('should redirect from Shorts URLs with probability', () => {
-      // Check if we can mock window.location
-      const descriptor = Object.getOwnPropertyDescriptor(window, 'location');
-      const canMockLocation = !descriptor || descriptor.configurable;
+      // Test the redirect logic without actually modifying window.location
+      // This tests the core logic in a way that works in all environments
 
-      if (!canMockLocation) {
-        // Skip this test in environments where window.location can't be mocked
-        console.log('Skipping redirect test - window.location is not configurable');
-        return;
-      }
-
-      // Mock implementation of the redirect function with weighted probability.
-      const checkAndRedirect = (isEnabled) => {
-        if (isEnabled && window.location.pathname.includes('/shorts')) {
-          // 68/69 chance for Rick Roll, 1/69 chance for the other video
-          const randomNum = Math.floor(Math.random() * 69);
-          if (randomNum === 0) {
-            window.location.href = 'https://www.youtube.com/watch?v=9Deg7VrpHbM';
-          } else {
-            window.location.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-          }
-        }
+      // Create a mock location object for testing
+      const mockLocation = {
+        pathname: '/shorts/abc123',
+        href: 'https://www.youtube.com/shorts/abc123',
       };
 
-      // Simulate being on a Shorts page with blocking enabled.
-      Object.defineProperty(window, 'location', {
-        value: {
-          pathname: '/shorts/abc123',
-          href: 'https://www.youtube.com/shorts/abc123',
-        },
-        writable: true,
-        configurable: true,
-      });
-      checkAndRedirect(true);
+      // Track what URL would be assigned
+      let assignedUrl = null;
 
-      // Verify redirect occurred to one of the valid URLs.
-      const redirectUrl = window.location.href;
+      // Mock implementation that tests the logic
+      const getRandomRedirectUrl = () => {
+        const randomNum = Math.floor(Math.random() * 69);
+        return randomNum === 0
+          ? 'https://www.youtube.com/watch?v=9Deg7VrpHbM'
+          : 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+      };
+
+      const checkAndRedirect = (isEnabled, location) => {
+        if (isEnabled && location.pathname.includes('/shorts')) {
+          assignedUrl = getRandomRedirectUrl();
+          return true; // Would redirect
+        }
+        return false; // Would not redirect
+      };
+
+      // Test that it detects Shorts URLs and would redirect
+      const wouldRedirect = checkAndRedirect(true, mockLocation);
+      expect(wouldRedirect).toBe(true);
+
+      // Verify a redirect URL was chosen
       const validUrls = [
         'https://www.youtube.com/watch?v=9Deg7VrpHbM',
         'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
       ];
-      expect(validUrls).toContain(redirectUrl);
+      expect(validUrls).toContain(assignedUrl);
+
+      // Test that it doesn't redirect when disabled
+      assignedUrl = null;
+      const wouldRedirectDisabled = checkAndRedirect(false, mockLocation);
+      expect(wouldRedirectDisabled).toBe(false);
+      expect(assignedUrl).toBe(null);
+
+      // Test that it doesn't redirect for non-Shorts URLs
+      assignedUrl = null;
+      const normalLocation = { pathname: '/watch', href: 'https://www.youtube.com/watch?v=123' };
+      const wouldRedirectNormal = checkAndRedirect(true, normalLocation);
+      expect(wouldRedirectNormal).toBe(false);
+      expect(assignedUrl).toBe(null);
     });
 
     test('should mostly redirect to Rick Roll', () => {
