@@ -18,6 +18,7 @@ export default [
         document: 'readonly',
         window: 'readonly',
         location: 'readonly',
+        navigator: 'readonly',
         performance: 'readonly',
         setTimeout: 'readonly',
         setInterval: 'readonly',

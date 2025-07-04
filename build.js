@@ -10,7 +10,7 @@ const DIST_DIR = 'dist';
 const BUILD_DIR = 'build';
 
 // Files to copy for all browsers
-const COMMON_FILES = ['popup.html', 'src/content.js', 'src/popup.js'];
+const COMMON_FILES = ['src/popup.html', 'src/content.js', 'src/popup.js'];
 
 // Asset files
 const ASSET_FILES = [

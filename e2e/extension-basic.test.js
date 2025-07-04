@@ -38,11 +38,11 @@ describe('Extension Structure Tests', () => {
 
   test('popup should have required elements', () => {
     // Read the popup HTML to verify it contains all required UI elements.
-    const popupPath = join(__dirname, '..', 'popup.html');
+    const popupPath = join(__dirname, '..', 'src', 'popup.html');
     const popup = readFileSync(popupPath, 'utf8');
 
     expect(popup).toContain('id="toggle"');
-    expect(popup).toContain('id="status"');
+    expect(popup).toContain('id="themeToggle"');
     expect(popup).toContain('id="totalBlocked"');
     expect(popup).toContain('id="sessionBlocked"');
     expect(popup).toContain('id="timeSaved"');
