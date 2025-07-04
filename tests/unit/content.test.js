@@ -37,11 +37,14 @@ describe('LongTube Content Script', () => {
     };
 
     // Reset window.location to a default YouTube URL.
-    delete window.location;
-    window.location = {
-      pathname: '/',
-      href: 'https://www.youtube.com/',
-    };
+    Object.defineProperty(window, 'location', {
+      value: {
+        pathname: '/',
+        href: 'https://www.youtube.com/',
+      },
+      writable: true,
+      configurable: true,
+    });
   });
 
   describe('CSS Injection', () => {
@@ -112,7 +115,14 @@ describe('LongTube Content Script', () => {
       };
 
       // Simulate being on a Shorts page with blocking enabled.
-      window.location.pathname = '/shorts/abc123';
+      Object.defineProperty(window, 'location', {
+        value: {
+          pathname: '/shorts/abc123',
+          href: 'https://www.youtube.com/shorts/abc123',
+        },
+        writable: true,
+        configurable: true,
+      });
       checkAndRedirect(true);
 
       // Verify redirect occurred to one of the valid URLs.
