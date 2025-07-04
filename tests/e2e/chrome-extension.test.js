@@ -71,7 +71,7 @@ describe('Chrome Extension Core Functionality', () => {
 
   test('should load extension and inject blocking CSS', async () => {
     await page.goto('https://www.youtube.com', { waitUntil: 'networkidle2' });
-    await page.waitForTimeout(2000);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Verify CSS injection
     const hasExtensionCSS = await page.evaluate(() => {
@@ -90,7 +90,7 @@ describe('Chrome Extension Core Functionality', () => {
 
   test('should apply longtube-active class when enabled', async () => {
     await page.goto('https://www.youtube.com', { waitUntil: 'networkidle2' });
-    await page.waitForTimeout(2000);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const extensionState = await page.evaluate(() => {
       return {
@@ -104,7 +104,7 @@ describe('Chrome Extension Core Functionality', () => {
 
   test('should have working storage API', async () => {
     await page.goto('https://www.youtube.com', { waitUntil: 'networkidle2' });
-    await page.waitForTimeout(2000);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Test storage operations
     const storageTest = await page.evaluate(async () => {
@@ -155,7 +155,7 @@ describe('Shorts Blocking Functionality', () => {
 
     // Wait for YouTube to fully load
     await page.waitForSelector('ytd-app', { timeout: 10000 });
-    await page.waitForTimeout(3000);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // Check Shorts visibility
     const shortsInfo = await page.evaluate(() => {
@@ -204,7 +204,7 @@ describe('Shorts Blocking Functionality', () => {
     });
 
     // Wait for potential redirect
-    await page.waitForTimeout(3000);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // Check if we were redirected
     const currentUrl = page.url();
@@ -216,7 +216,7 @@ describe('Shorts Blocking Functionality', () => {
 
   test('should track blocked count', async () => {
     await page.goto('https://www.youtube.com', { waitUntil: 'networkidle2' });
-    await page.waitForTimeout(3000);
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // Get blocked count from storage
     const stats = await page.evaluate(() => {
@@ -270,7 +270,7 @@ describe('Extension Popup Functionality', () => {
     const popupUrl = `chrome-extension://${extensionId}/src/popup.html`;
     page = await browser.newPage();
     await page.goto(popupUrl);
-    await page.waitForTimeout(1000);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Check popup elements
     const popupElements = await page.evaluate(() => {
