@@ -37,14 +37,26 @@ describe('LongTube Content Script', () => {
     };
 
     // Reset window.location to a default YouTube URL.
-    Object.defineProperty(window, 'location', {
-      value: {
-        pathname: '/',
-        href: 'https://www.youtube.com/',
-      },
-      writable: true,
-      configurable: true,
-    });
+    // In some environments, window.location is not configurable
+    try {
+      Object.defineProperty(window, 'location', {
+        value: {
+          pathname: '/',
+          href: 'https://www.youtube.com/',
+        },
+        writable: true,
+        configurable: true,
+      });
+    } catch {
+      // If window.location can't be redefined, mock it on the global object
+      global.window = {
+        ...global.window,
+        location: {
+          pathname: '/',
+          href: 'https://www.youtube.com/',
+        },
+      };
+    }
   });
 
   describe('CSS Injection', () => {
@@ -115,14 +127,25 @@ describe('LongTube Content Script', () => {
       };
 
       // Simulate being on a Shorts page with blocking enabled.
-      Object.defineProperty(window, 'location', {
-        value: {
-          pathname: '/shorts/abc123',
-          href: 'https://www.youtube.com/shorts/abc123',
-        },
-        writable: true,
-        configurable: true,
-      });
+      try {
+        Object.defineProperty(window, 'location', {
+          value: {
+            pathname: '/shorts/abc123',
+            href: 'https://www.youtube.com/shorts/abc123',
+          },
+          writable: true,
+          configurable: true,
+        });
+      } catch {
+        // If window.location can't be redefined, mock it on the global object
+        global.window = {
+          ...global.window,
+          location: {
+            pathname: '/shorts/abc123',
+            href: 'https://www.youtube.com/shorts/abc123',
+          },
+        };
+      }
       checkAndRedirect(true);
 
       // Verify redirect occurred to one of the valid URLs.
