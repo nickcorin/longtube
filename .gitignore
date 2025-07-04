@@ -40,19 +40,5 @@ npm-debug.log*
 *-preview.html
 verify-*.html
 
-# Documentation drafts
-BROWSER_DEPLOYMENT_GUIDE.md
-
-# Test profiles
-test-profile-chrome/
-test-profile-firefox/
-test-profile-firefox-configured/
-test-profile-firefox-webext/
-test-profile-firefox-manual/
-
-# Playwright artifacts
-test-results/
-playwright-report/
-
 # Coverage temp files
 coverage/.lcov.info.*.tmp
