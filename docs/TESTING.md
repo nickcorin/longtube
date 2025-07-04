@@ -25,11 +25,13 @@ tests/
 ## Testing Approach
 
 ### Chrome Testing
+
 - **Tool**: Puppeteer
 - **Coverage**: Full E2E testing with real browser
 - **Capabilities**: Extension loading, UI interaction, content blocking verification
 
 ### Firefox Testing
+
 - **Tool**: Integration tests + Manual verification
 - **Why**: Automated Firefox extension testing has severe limitations
 - **Coverage**: API compatibility, manifest validation, manual smoke tests
@@ -56,22 +58,26 @@ bun test tests/unit/firefox-integration.test.js
 ## Key Test Categories
 
 ### 1. Unit Tests
+
 - Browser API compatibility layer
 - Individual function testing
 - Cross-browser API normalization
 
 ### 2. Integration Tests
+
 - Firefox environment simulation
 - API interaction verification
 - Manifest validation
 
 ### 3. E2E Tests (Chrome)
+
 - Extension loading
 - Content blocking
 - UI functionality
 - Storage persistence
 
 ### 4. Manual Tests (Firefox)
+
 - Extension installation via `web-ext`
 - Visual verification
 - Functionality smoke tests
@@ -87,12 +93,14 @@ Due to technical limitations with Firefox extension automation:
 ## CI/CD Strategy
 
 ### Automated (GitHub Actions)
+
 - ✅ Unit tests (all browsers)
 - ✅ Integration tests (Firefox compatibility)
 - ✅ E2E tests (Chrome only)
 - ✅ Linting and formatting
 
 ### Manual (Before release)
+
 - ✅ Chrome: Automated tests cover this
 - ⚠️ Firefox: Manual testing required
 - ⚠️ Edge/Opera: Manual testing recommended
@@ -100,6 +108,7 @@ Due to technical limitations with Firefox extension automation:
 ## Writing New Tests
 
 ### For Chrome Features
+
 ```javascript
 test('should block new Shorts element', async () => {
   await page.goto('https://www.youtube.com');
@@ -108,10 +117,13 @@ test('should block new Shorts element', async () => {
 ```
 
 ### For Cross-Browser Features
+
 ```javascript
 test('Firefox: API compatibility', () => {
   // Set up Firefox environment
-  global.browser = { /* mock */ };
+  global.browser = {
+    /* mock */
+  };
   // Test compatibility layer
 });
 ```

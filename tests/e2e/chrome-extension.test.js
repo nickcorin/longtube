@@ -25,7 +25,7 @@ function ensureExtensionBuilt() {
 // Launch Chrome with the extension loaded
 async function launchChromeWithExtension() {
   ensureExtensionBuilt();
-  
+
   const args = [
     '--no-sandbox',
     '--disable-setuid-sandbox',
@@ -52,9 +52,9 @@ describe('Chrome Extension Core Functionality', () => {
 
   beforeEach(async () => {
     page = await browser.newPage();
-    
+
     // Enable console logging for debugging
-    page.on('console', msg => {
+    page.on('console', (msg) => {
       if (msg.text().includes('[LongTube]')) {
         console.log('Extension:', msg.text());
       }
@@ -109,17 +109,17 @@ describe('Chrome Extension Core Functionality', () => {
     // Test storage operations
     const storageTest = await page.evaluate(async () => {
       // Set a test value
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         chrome.storage.local.set({ testKey: 'testValue' }, resolve);
       });
 
       // Get the test value
-      const result = await new Promise(resolve => {
+      const result = await new Promise((resolve) => {
         chrome.storage.local.get(['testKey'], resolve);
       });
 
       // Clean up
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         chrome.storage.local.remove(['testKey'], resolve);
       });
 
@@ -152,7 +152,7 @@ describe('Shorts Blocking Functionality', () => {
 
   test('should hide Shorts shelves on homepage', async () => {
     await page.goto('https://www.youtube.com', { waitUntil: 'networkidle2' });
-    
+
     // Wait for YouTube to fully load
     await page.waitForSelector('ytd-app', { timeout: 10000 });
     await page.waitForTimeout(3000);
@@ -167,17 +167,19 @@ describe('Shorts Blocking Functionality', () => {
       ];
 
       const results = {};
-      selectors.forEach(selector => {
+      selectors.forEach((selector) => {
         const elements = document.querySelectorAll(selector);
         results[selector] = {
           count: elements.length,
-          visible: Array.from(elements).filter(el => {
+          visible: Array.from(elements).filter((el) => {
             const style = window.getComputedStyle(el);
             const rect = el.getBoundingClientRect();
-            return style.display !== 'none' && 
-                   style.visibility !== 'hidden' && 
-                   rect.width > 0 && 
-                   rect.height > 0;
+            return (
+              style.display !== 'none' &&
+              style.visibility !== 'hidden' &&
+              rect.width > 0 &&
+              rect.height > 0
+            );
           }).length,
         };
       });
@@ -188,7 +190,7 @@ describe('Shorts Blocking Functionality', () => {
     console.log('Shorts visibility info:', shortsInfo);
 
     // Verify Shorts are hidden
-    Object.values(shortsInfo).forEach(info => {
+    Object.values(shortsInfo).forEach((info) => {
       if (info.count > 0) {
         expect(info.visible).toBe(0);
       }
@@ -207,7 +209,7 @@ describe('Shorts Blocking Functionality', () => {
     // Check if we were redirected
     const currentUrl = page.url();
     expect(currentUrl).not.toContain('/shorts/');
-    
+
     // Should redirect to a watch URL
     expect(currentUrl).toMatch(/\/watch\?v=/);
   }, 15000);
@@ -218,8 +220,8 @@ describe('Shorts Blocking Functionality', () => {
 
     // Get blocked count from storage
     const stats = await page.evaluate(() => {
-      return new Promise(resolve => {
-        chrome.storage.local.get(['totalBlockedCount', 'enabled'], result => {
+      return new Promise((resolve) => {
+        chrome.storage.local.get(['totalBlockedCount', 'enabled'], (result) => {
           resolve({
             totalBlockedCount: result.totalBlockedCount || 0,
             enabled: result.enabled !== false,
@@ -240,13 +242,13 @@ describe('Extension Popup Functionality', () => {
 
   beforeAll(async () => {
     browser = await launchChromeWithExtension();
-    
+
     // Get extension ID
     const targets = await browser.targets();
-    const extensionTarget = targets.find(target => 
-      target.type() === 'service_worker' || target.type() === 'background_page'
+    const extensionTarget = targets.find(
+      (target) => target.type() === 'service_worker' || target.type() === 'background_page'
     );
-    
+
     if (extensionTarget) {
       const extensionUrl = extensionTarget.url();
       extensionId = extensionUrl.split('/')[2];
