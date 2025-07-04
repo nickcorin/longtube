@@ -14,7 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 describe('Extension Structure Tests', () => {
   test('manifest.json should be valid', () => {
     // Load and parse the extension manifest file.
-    const manifestPath = join(__dirname, '..', 'manifest.json');
+    const manifestPath = join(__dirname, '../../manifest.json');
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 
     expect(manifest.manifest_version).toBe(3);
@@ -25,7 +25,7 @@ describe('Extension Structure Tests', () => {
 
   test('content script should have required functions', () => {
     // Read the content script to verify it contains all required functions.
-    const contentPath = join(__dirname, '..', 'src', 'content.js');
+    const contentPath = join(__dirname, '../../src/content.js');
     const content = readFileSync(contentPath, 'utf8');
 
     // Verify that all essential functions are defined in the content script.
@@ -33,12 +33,12 @@ describe('Extension Structure Tests', () => {
     expect(content).toContain('const injectBlockingCSS =');
     expect(content).toContain('const removeShortsFromDOM =');
     expect(content).toContain('const updateBlockedCount =');
-    expect(content).toContain('chrome.runtime.onMessage.addListener');
+    expect(content).toContain('browserAPI.runtime.onMessage.addListener');
   });
 
   test('popup should have required elements', () => {
     // Read the popup HTML to verify it contains all required UI elements.
-    const popupPath = join(__dirname, '..', 'src', 'popup.html');
+    const popupPath = join(__dirname, '../../src/popup.html');
     const popup = readFileSync(popupPath, 'utf8');
 
     expect(popup).toContain('id="toggle"');
@@ -52,7 +52,7 @@ describe('Extension Structure Tests', () => {
 
   test('CSS should not contain invalid selectors', () => {
     // Read the content script to verify CSS selectors are valid.
-    const contentPath = join(__dirname, '..', 'src', 'content.js');
+    const contentPath = join(__dirname, '../../src/content.js');
     const content = readFileSync(contentPath, 'utf8');
 
     // Ensure that invalid pseudo-selectors like :has-text() are not used.

@@ -43,7 +43,7 @@ jobs:
         run: bun test tests/unit/
       
       - name: Run structure tests
-        run: bun test e2e/extension-basic.test.js
+        run: bun test tests/e2e/extension-basic.test.js
 
   test-e2e:
     name: E2E Tests
@@ -65,7 +65,7 @@ jobs:
         run: |
           export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
           export PUPPETEER_EXECUTABLE_PATH=$(which chrome)
-          bun test e2e/extension-loading.test.js
+          bun test tests/e2e/extension-loading.test.js
         env:
           CI: true
         continue-on-error: true  # E2E tests can be flaky in CI
