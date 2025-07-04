@@ -36,6 +36,7 @@ Short-form content is engineered to be addictive. It hijacks your attention span
 ## 🚀 Installation
 
 ### Quick Install
+
 1. Clone this repository:
    ```bash
    git clone https://github.com/yourusername/longtube.git
@@ -58,6 +59,7 @@ LongTube acts as your digital guardian:
 ## 📈 Track Your Progress
 
 The extension shows you:
+
 - **Shorts Blocked** - Your shield count against mind-numbing content
 - **Time Saved** - Hours of your life not wasted on algorithmic junk food
 - **Current Session** - Real-time protection statistics
@@ -65,6 +67,7 @@ The extension shows you:
 ## 🛠️ Development
 
 ### For Developers
+
 ```bash
 # Install dependencies
 bun install
@@ -80,6 +83,7 @@ bun run coverage
 ```
 
 ### Tech Stack
+
 - Vanilla JavaScript (no bloat, just protection)
 - Chrome Extension Manifest V3
 - Bun for lightning-fast testing
@@ -97,7 +101,7 @@ Help us fight the good fight against attention hijacking:
 
 ## 🧘 Philosophy
 
-We believe the internet should enhance human potential, not exploit it. Short-form content is designed to be digital crack - keeping you hooked, distracted, and always craving more. 
+We believe the internet should enhance human potential, not exploit it. Short-form content is designed to be digital crack - keeping you hooked, distracted, and always craving more.
 
 **LongTube is your defense against algorithmic mind control.**
 

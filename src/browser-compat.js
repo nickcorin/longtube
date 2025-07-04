@@ -6,7 +6,7 @@
 // Detect the browser environment
 const getBrowserInfo = () => {
   const ua = navigator.userAgent;
-  
+
   if (ua.includes('Firefox/')) {
     return { name: 'firefox', engine: 'gecko' };
   } else if (ua.includes('Edg/')) {
@@ -18,7 +18,7 @@ const getBrowserInfo = () => {
   } else if (ua.includes('Chrome/')) {
     return { name: 'chrome', engine: 'chromium' };
   }
-  
+
   return { name: 'unknown', engine: 'unknown' };
 };
 
@@ -49,7 +49,7 @@ const promisifyAPI = (api, method) => {
           resolve(result);
         }
       };
-      
+
       // Check if the method already returns a Promise (Firefox)
       const result = api[method](...args, callback);
       if (result && typeof result.then === 'function') {
@@ -68,28 +68,28 @@ const storage = {
       }
       return promisifyAPI(browserAPI.storage.local, 'get')(keys);
     },
-    
+
     set: (items) => {
       if (browserInfo.name === 'firefox') {
         return browserAPI.storage.local.set(items);
       }
       return promisifyAPI(browserAPI.storage.local, 'set')(items);
     },
-    
+
     remove: (keys) => {
       if (browserInfo.name === 'firefox') {
         return browserAPI.storage.local.remove(keys);
       }
       return promisifyAPI(browserAPI.storage.local, 'remove')(keys);
     },
-    
+
     clear: () => {
       if (browserInfo.name === 'firefox') {
         return browserAPI.storage.local.clear();
       }
       return promisifyAPI(browserAPI.storage.local, 'clear')();
-    }
-  }
+    },
+  },
 };
 
 // Runtime API wrapper
@@ -100,33 +100,33 @@ const runtime = {
     }
     return promisifyAPI(browserAPI.runtime, 'sendMessage')(message);
   },
-  
+
   onMessage: {
     addListener: (callback) => {
       // Convert callback to handle both Chrome and Firefox styles
       const wrappedCallback = (message, sender, sendResponse) => {
         const result = callback(message, sender, sendResponse);
-        
+
         // Firefox expects true to be returned for async responses
         if (result instanceof Promise) {
           result.then(sendResponse);
           return true; // Keep message channel open
         }
-        
+
         return result;
       };
-      
+
       browserAPI.runtime.onMessage.addListener(wrappedCallback);
     },
-    
+
     removeListener: (callback) => {
       browserAPI.runtime.onMessage.removeListener(callback);
-    }
+    },
   },
-  
+
   getURL: (path) => browserAPI.runtime.getURL(path),
-  
-  getManifest: () => browserAPI.runtime.getManifest()
+
+  getManifest: () => browserAPI.runtime.getManifest(),
 };
 
 // Tabs API wrapper (for potential future use)
@@ -137,13 +137,13 @@ const tabs = {
     }
     return promisifyAPI(browserAPI.tabs, 'query')(queryInfo);
   },
-  
+
   sendMessage: (tabId, message) => {
     if (browserInfo.name === 'firefox') {
       return browserAPI.tabs.sendMessage(tabId, message);
     }
     return promisifyAPI(browserAPI.tabs, 'sendMessage')(tabId, message);
-  }
+  },
 };
 
 // Action API wrapper (handles browser action / page action differences)
@@ -162,19 +162,21 @@ const features = {
   hasDeclarativeNetRequest: () => {
     return browserAPI && browserAPI.declarativeNetRequest !== undefined;
   },
-  
+
   // Check if webRequest blocking is available (Firefox-specific)
   hasWebRequestBlocking: () => {
-    return browserAPI && 
-           browserAPI.webRequest && 
-           browserAPI.webRequest.onBeforeRequest &&
-           browserInfo.name === 'firefox';
+    return (
+      browserAPI &&
+      browserAPI.webRequest &&
+      browserAPI.webRequest.onBeforeRequest &&
+      browserInfo.name === 'firefox'
+    );
   },
-  
+
   // Check if the browser supports service workers (not Firefox)
   hasServiceWorker: () => {
     return 'serviceWorker' in navigator && browserInfo.name !== 'firefox';
-  }
+  },
 };
 
 // Export the compatibility layer
@@ -185,7 +187,7 @@ const compat = {
   runtime,
   tabs,
   action,
-  features
+  features,
 };
 
 // For ES6 modules

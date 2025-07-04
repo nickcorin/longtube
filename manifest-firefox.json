@@ -3,7 +3,7 @@
   "name": "LongTube",
   "version": "1.0.0",
   "description": "Remove YouTube Shorts to focus on long-form content",
-  
+
   "browser_specific_settings": {
     "gecko": {
       "id": "longtube@example.com",
@@ -18,7 +18,7 @@
   },
 
   "permissions": ["storage", "activeTab"],
-  
+
   "host_permissions": ["*://*.youtube.com/*"],
 
   "action": {

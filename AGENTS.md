@@ -38,6 +38,7 @@ build.js        → Multi-browser build script
 ## Code Conventions
 
 ### JavaScript Style
+
 - Use ES6+ features (const/let, arrow functions, template literals)
 - No semicolons required (Prettier handles)
 - Single quotes for strings
@@ -45,11 +46,13 @@ build.js        → Multi-browser build script
 - Descriptive variable names (no abbreviations)
 
 ### Documentation
+
 - JSDoc for all functions with @param and @returns
 - Comments are complete sentences with proper grammar
 - Explain WHY, not WHAT the code does
 
 ### Error Handling
+
 - Always handle chrome.runtime.lastError
 - Use try-catch for async operations
 - Log errors with context for debugging
@@ -73,24 +76,28 @@ Use Happy-DOM for DOM testing, Puppeteer for e2e
 ## Common Operations
 
 ### Add new YouTube selector to block
+
 1. Identify selector in browser DevTools
 2. Add to appropriate property in `SELECTORS` object in `src/content.js`
 3. Write test in `tests/unit/content.test.js`
 4. Test manually on YouTube
 
 ### Update popup UI
+
 1. Edit `popup.html` (uses inline styles)
 2. Update `src/popup.js` for logic changes
 3. Test in `tests/unit/popup.test.js`
 4. Manually test by loading extension
 
 ### Build for distribution
+
 ```bash
 bun run build              # Creates dist/*.zip for all browsers
 bun run build:clean        # Clean build directories
 ```
 
 ### Create new test
+
 1. Add test file in `/tests/unit/`
 2. Import required modules and setup
 3. Use describe/it blocks
@@ -99,15 +106,18 @@ bun run build:clean        # Clean build directories
 ## Browser API Usage
 
 ### Storage API
+
 - Use `chrome.storage.local` for persistence
 - Keys: 'enabled', 'totalBlockedCount', 'sessionStartCount', 'theme'
 - Always check chrome.runtime.lastError
 
 ### Message Passing
+
 - Content ↔ Popup communication via chrome.runtime.sendMessage
 - Message types: 'toggleBlocking', 'getStatus'
 
 ### Content Script Injection
+
 - Runs at `document_start` for immediate blocking
 - CSS injection for instant visual hiding
 - MutationObserver for dynamic content
@@ -115,6 +125,7 @@ bun run build:clean        # Clean build directories
 ## Validation Checklist
 
 Before submitting changes:
+
 - [ ] Tests pass: `bun test`
 - [ ] Linting passes: `bun run lint`
 - [ ] Formatting correct: `bun run format:check`
@@ -136,6 +147,7 @@ Before submitting changes:
 **Not supported**: Safari (requires native app wrapper)
 
 **Missing for store submission**:
+
 - LICENSE file (MIT)
 - Privacy Policy page
 - Screenshots (1280x800)
