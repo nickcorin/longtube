@@ -1,0 +1,158 @@
+/**
+ * LongTube extension popup script that provides user interface controls.
+ * This script manages the popup's UI state, handles user interactions,
+ * and communicates with content scripts to control Shorts blocking.
+ */
+
+// DOM element references for the popup UI.
+const toggle = document.getElementById('toggle');
+const totalBlockedElement = document.getElementById('totalBlocked');
+const sessionBlockedElement = document.getElementById('sessionBlocked');
+const timeSavedElement = document.getElementById('timeSaved');
+const resetButton = document.getElementById('resetCount');
+const themeToggle = document.getElementById('themeToggle');
+
+// Tracks the total blocked count at the start of the session.
+let sessionStartCount = 0;
+
+// Average time per Shorts video in seconds (15-30 seconds average).
+const AVERAGE_SHORTS_DURATION = 20;
+
+/**
+ * Calculates and formats the time saved based on blocked Shorts count.
+ * @param {number} count - Number of Shorts blocked.
+ * @returns {string} Formatted time saved string.
+ */
+function calculateTimeSaved(count) {
+  const totalSeconds = count * AVERAGE_SHORTS_DURATION;
+
+  if (totalSeconds < 60) {
+    return `${totalSeconds} seconds`;
+  } else if (totalSeconds < 3600) {
+    const minutes = Math.floor(totalSeconds / 60);
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  } else {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    if (minutes === 0) {
+      return `${hours} hour${hours !== 1 ? 's' : ''}`;
+    }
+    return `${hours}h ${minutes}m`;
+  }
+}
+
+/**
+ * Updates the popup UI to reflect the current extension state and blocked counts.
+ * @param {boolean} enabled - Whether Shorts blocking is currently enabled.
+ * @param {number} totalCount - The total number of Shorts blocked all-time.
+ */
+function updateUI(enabled, totalCount) {
+  toggle.classList.toggle('active', enabled);
+
+  totalBlockedElement.textContent = totalCount || 0;
+  sessionBlockedElement.textContent = Math.max(0, (totalCount || 0) - sessionStartCount);
+
+  // Update time saved display.
+  timeSavedElement.textContent = calculateTimeSaved(totalCount || 0);
+}
+
+/**
+ * Loads and applies the saved theme preference.
+ */
+function loadTheme() {
+  chrome.storage.local.get(['theme'], (result) => {
+    const theme = result.theme || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+  });
+}
+
+/**
+ * Toggles between light and dark theme.
+ */
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+  document.documentElement.setAttribute('data-theme', newTheme);
+  chrome.storage.local.set({ theme: newTheme });
+}
+
+// Load theme on popup open.
+loadTheme();
+
+// Handle theme toggle button click.
+themeToggle.addEventListener('click', toggleTheme);
+
+/**
+ * Loads the initial extension state from storage and updates the UI.
+ * This runs when the popup is first opened.
+ */
+chrome.storage.local.get(['enabled', 'totalBlockedCount', 'sessionStartCount'], (result) => {
+  const enabled = result.enabled !== false; // Default to true if not set.
+  const totalCount = result.totalBlockedCount || 0;
+
+  // Initialize session start count if this is the first time opening the popup.
+  if (result.sessionStartCount === undefined) {
+    sessionStartCount = totalCount;
+    chrome.storage.local.set({ sessionStartCount: totalCount });
+  } else {
+    sessionStartCount = result.sessionStartCount;
+  }
+
+  updateUI(enabled, totalCount);
+});
+
+/**
+ * Handles the toggle button click to enable or disable Shorts blocking.
+ * Updates storage, UI, and notifies all YouTube tabs of the state change.
+ */
+toggle.addEventListener('click', () => {
+  const enabled = toggle.classList.contains('active');
+  const newEnabled = !enabled;
+
+  // Persist the new state to storage.
+  chrome.storage.local.set({ enabled: newEnabled });
+
+  // Update the popup UI immediately.
+  updateUI(newEnabled, parseInt(totalBlockedElement.textContent));
+
+  // Notify all YouTube tabs about the state change.
+  chrome.tabs.query({ url: '*://*.youtube.com/*' }, (tabs) => {
+    tabs.forEach((tab) => {
+      chrome.tabs.sendMessage(tab.id, {
+        action: 'toggleBlocking',
+        enabled: newEnabled,
+      });
+    });
+  });
+});
+
+/**
+ * Resets all blocked counts to zero when the reset button is clicked.
+ * This clears both the total count and session count.
+ */
+resetButton.addEventListener('click', () => {
+  chrome.storage.local.set(
+    {
+      totalBlockedCount: 0,
+      sessionStartCount: 0,
+    },
+    () => {
+      sessionStartCount = 0;
+      updateUI(toggle.classList.contains('active'), 0);
+    }
+  );
+});
+
+/**
+ * Listens for storage changes to update the blocked counts in real-time.
+ * This allows the popup to reflect changes made by content scripts immediately.
+ */
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local' && changes.totalBlockedCount) {
+    const newTotal = changes.totalBlockedCount.newValue || 0;
+    totalBlockedElement.textContent = newTotal;
+    sessionBlockedElement.textContent = Math.max(0, newTotal - sessionStartCount);
+    timeSavedElement.textContent = calculateTimeSaved(newTotal);
+  }
+});

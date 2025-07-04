@@ -1,0 +1,8 @@
+[test]
+preload = ["./tests/setup.js"]
+coverage = true
+coverageReporter = ["text", "lcov"]
+# Only run unit tests, not e2e
+testMatch = ["tests/unit/**/*.test.js"]
+# Exclude e2e tests
+testPathIgnorePatterns = ["e2e/", "node_modules/"]

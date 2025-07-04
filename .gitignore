@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+bun.lock
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build files
+dist/
+build/
+builds/
+*.zip
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Development/preview files
+*-preview.html
+verify-*.html
+
+# Documentation drafts
+BROWSER_DEPLOYMENT_GUIDE.md

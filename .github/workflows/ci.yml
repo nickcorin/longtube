@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Run ESLint
+        run: bun run lint
+      
+      - name: Check formatting
+        run: bun run format:check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Run unit tests
+        run: bun test tests/unit/
+      
+      - name: Run structure tests
+        run: bun test e2e/extension-basic.test.js
+
+  test-e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      
+      - name: Install dependencies
+        run: bun install
+      
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+      
+      - name: Run E2E tests
+        run: |
+          export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+          export PUPPETEER_EXECUTABLE_PATH=$(which chrome)
+          bun test e2e/extension-loading.test.js
+        env:
+          CI: true
+        continue-on-error: true  # E2E tests can be flaky in CI
+
+  build:
+    name: Build Extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check manifest
+        run: |
+          if [ ! -f "manifest.json" ]; then
+            echo "manifest.json not found!"
+            exit 1
+          fi
+          
+      - name: Validate manifest
+        run: |
+          python3 -m json.tool manifest.json > /dev/null
+          
+      - name: Check required files
+        run: |
+          required_files=("src/content.js" "src/popup.js" "popup.html")
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "Required file $file not found!"
+              exit 1
+            fi
+          done
+          
+      - name: Create extension package
+        run: |
+          mkdir -p dist
+          zip -r dist/longtube.zip manifest.json src/ popup.html assets/ -x "*.test.js" -x "*node_modules*"
+          
+      - name: Upload extension artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: longtube-extension
+          path: dist/longtube.zip

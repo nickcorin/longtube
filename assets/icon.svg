@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="24" fill="#1e293b"/>
+  
+  <!-- Logo: Eye with slash - "Stop Watching" concept -->
+  <g transform="translate(64, 64)">
+    <!-- Eye shape -->
+    <path d="M -40 0 Q -20 -25, 0 -25 Q 20 -25, 40 0 Q 20 25, 0 25 Q -20 25, -40 0 Z" 
+          fill="none" stroke="#e2e8f0" stroke-width="6" stroke-linecap="round"/>
+    
+    <!-- Iris -->
+    <circle cx="0" cy="0" r="16" fill="none" stroke="#e2e8f0" stroke-width="6"/>
+    
+    <!-- Pupil -->
+    <circle cx="0" cy="0" r="6" fill="#e2e8f0"/>
+    
+    <!-- Diagonal slash -->
+    <line x1="-45" y1="-30" x2="45" y2="30" stroke="#ef4444" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>

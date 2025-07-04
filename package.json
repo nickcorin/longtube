@@ -1,0 +1,47 @@
+{
+  "name": "longtube",
+  "version": "1.0.0",
+  "description": "Block YouTube Shorts browser extension",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/longtube"
+  },
+  "keywords": [
+    "youtube",
+    "shorts",
+    "blocker",
+    "extension",
+    "chrome",
+    "browser"
+  ],
+  "author": "Nick Corin",
+  "license": "MIT",
+  "scripts": {
+    "build": "bun run build.js",
+    "build:clean": "bun run build.js clean",
+    "dev": "bun run build.js dev",
+    "test": "bun test tests/unit/",
+    "test:watch": "bun test tests/unit/ --watch",
+    "test:coverage": "bun test --coverage",
+    "test:e2e": "bun test e2e/",
+    "test:real-dom": "bun test tests/real-dom.test.js",
+    "test:cross-browser": "bun test tests/cross-browser.test.js",
+    "test:all": "bun test",
+    "lint": "eslint src/**/*.js tests/**/*.js e2e/**/*.js",
+    "lint:fix": "eslint src/**/*.js tests/**/*.js e2e/**/*.js --fix",
+    "format": "prettier --write \"**/*.{js,json,html,css,md}\"",
+    "format:check": "prettier --check \"**/*.{js,json,html,css,md}\"",
+    "ci": "bun run lint && bun run format:check && bun run test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@happy-dom/global-registrator": "^12.10.3",
+    "@testing-library/dom": "^9.3.3",
+    "eslint": "^9.30.1",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.1",
+    "prettier": "^3.6.2",
+    "puppeteer": "^24.11.2"
+  }
+}

@@ -1,0 +1,116 @@
+<!-- Simplified YouTube homepage structure with Shorts -->
+<div id="page-manager">
+  <ytd-app>
+    <div id="content">
+      <ytd-page-manager>
+        <ytd-browse>
+          <div id="primary">
+            <ytd-rich-grid-renderer>
+              <!-- Regular video -->
+              <ytd-rich-item-renderer>
+                <ytd-rich-grid-media>
+                  <div id="dismissible">
+                    <ytd-thumbnail>
+                      <a href="/watch?v=dQw4w9WgXcQ">
+                        <img src="thumbnail.jpg" alt="Regular Video" />
+                      </a>
+                    </ytd-thumbnail>
+                    <div id="details">
+                      <h3>Regular Long-form Video</h3>
+                    </div>
+                  </div>
+                </ytd-rich-grid-media>
+              </ytd-rich-item-renderer>
+
+              <!-- Shorts shelf -->
+              <ytd-rich-shelf-renderer is-shorts>
+                <div id="header">
+                  <h2>Shorts</h2>
+                </div>
+                <div id="contents">
+                  <ytd-rich-grid-row>
+                    <ytd-rich-item-renderer>
+                      <a href="/shorts/abc123">
+                        <img src="shorts1.jpg" alt="Shorts Video 1" />
+                      </a>
+                    </ytd-rich-item-renderer>
+                    <ytd-rich-item-renderer>
+                      <a href="/shorts/def456">
+                        <img src="shorts2.jpg" alt="Shorts Video 2" />
+                      </a>
+                    </ytd-rich-item-renderer>
+                  </ytd-rich-grid-row>
+                </div>
+              </ytd-rich-shelf-renderer>
+
+              <!-- Another regular video -->
+              <ytd-rich-item-renderer>
+                <ytd-rich-grid-media>
+                  <div id="dismissible">
+                    <ytd-thumbnail>
+                      <a href="/watch?v=xyz789">
+                        <img src="thumbnail2.jpg" alt="Another Video" />
+                      </a>
+                    </ytd-thumbnail>
+                    <div id="details">
+                      <h3>Another Regular Video</h3>
+                    </div>
+                  </div>
+                </ytd-rich-grid-media>
+              </ytd-rich-item-renderer>
+            </ytd-rich-grid-renderer>
+          </div>
+        </ytd-browse>
+      </ytd-page-manager>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="guide">
+      <ytd-guide-renderer>
+        <div id="items">
+          <ytd-guide-entry-renderer>
+            <a href="/" title="Home">
+              <yt-icon></yt-icon>
+              <span>Home</span>
+            </a>
+          </ytd-guide-entry-renderer>
+          <ytd-guide-entry-renderer aria-label="Shorts">
+            <a href="/shorts" title="Shorts">
+              <yt-icon></yt-icon>
+              <span>Shorts</span>
+            </a>
+          </ytd-guide-entry-renderer>
+          <ytd-guide-entry-renderer>
+            <a href="/feed/subscriptions" title="Subscriptions">
+              <yt-icon></yt-icon>
+              <span>Subscriptions</span>
+            </a>
+          </ytd-guide-entry-renderer>
+        </div>
+      </ytd-guide-renderer>
+    </div>
+
+    <!-- Filter chips -->
+    <div id="chips">
+      <yt-chip-cloud-renderer>
+        <iron-selector id="chips">
+          <yt-chip-cloud-chip-renderer>
+            <chip-shape>
+              <button>All</button>
+            </chip-shape>
+          </yt-chip-cloud-chip-renderer>
+          <yt-chip-cloud-chip-renderer>
+            <chip-shape>
+              <button>Shorts</button>
+            </chip-shape>
+          </yt-chip-cloud-chip-renderer>
+          <yt-chip-cloud-chip-renderer>
+            <chip-shape>
+              <button>Music</button>
+            </chip-shape>
+          </yt-chip-cloud-chip-renderer>
+        </iron-selector>
+      </yt-chip-cloud-renderer>
+    </div>
+  </ytd-app>
+</div>
