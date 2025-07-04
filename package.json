@@ -1,7 +1,7 @@
 {
   "name": "longtube",
   "version": "1.0.0",
-  "description": "Block YouTube Shorts browser extension",
+  "description": "Browser extension to remove Shorts from YouTube",
   "type": "module",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
     "chrome",
     "browser"
   ],
-  "author": "Nick Corin",
+  "author": "Nicholas Corin",
   "license": "MIT",
   "scripts": {
     "build": "bun run build.js",
@@ -24,12 +24,12 @@
     "test": "bun test tests/unit/",
     "test:watch": "bun test tests/unit/ --watch",
     "test:coverage": "bun test --coverage",
-    "test:e2e": "bun test e2e/",
-    "test:real-dom": "bun test tests/real-dom.test.js",
-    "test:cross-browser": "bun test tests/cross-browser.test.js",
+    "test:e2e": "bun test tests/e2e/",
+    "test:real-dom": "bun test tests/unit/real-dom.test.js",
+    "test:cross-browser": "bun test tests/unit/cross-browser.test.js",
     "test:all": "bun test",
-    "lint": "eslint src/**/*.js tests/**/*.js e2e/**/*.js",
-    "lint:fix": "eslint src/**/*.js tests/**/*.js e2e/**/*.js --fix",
+    "lint": "eslint src/**/*.js tests/**/*.js",
+    "lint:fix": "eslint src/**/*.js tests/**/*.js --fix",
     "format": "prettier --write \"**/*.{js,json,html,css,md}\"",
     "format:check": "prettier --check \"**/*.{js,json,html,css,md}\"",
     "ci": "bun run lint && bun run format:check && bun run test"

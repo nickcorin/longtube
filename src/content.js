@@ -1,5 +1,15 @@
 'use strict';
 
+// Use the browser compatibility layer from browser-compat.js.
+// Fallback to chrome API if browserCompat is not available (Chrome doesn't need the compat layer).
+const browserAPI = window.browserCompat || {
+  storage: {
+    local: chrome.storage.local,
+    onChanged: chrome.storage.onChanged,
+  },
+  runtime: chrome.runtime,
+};
+
 /**
  * LongTube extension content script that blocks YouTube Shorts content.
  * This script runs on YouTube pages and removes Shorts videos, shelves, navigation items,
@@ -220,9 +230,9 @@ const updateBlockedCount = async (count) => {
   state.incrementPageCount(count);
 
   try {
-    const result = await chrome.storage.local.get(['totalBlockedCount']);
+    const result = await browserAPI.storage.local.get(['totalBlockedCount']);
     const newTotal = (result.totalBlockedCount || 0) + count;
-    await chrome.storage.local.set({ totalBlockedCount: newTotal });
+    await browserAPI.storage.local.set({ totalBlockedCount: newTotal });
     log(`Blocked ${count} new items, total: ${newTotal}, page: ${state.pageBlockedCount}`);
   } catch (error) {
     log('Error updating blocked count:', error);
@@ -255,7 +265,7 @@ const handleMessage = (request, _, sendResponse) => {
   switch (request.action) {
     case 'toggleBlocking':
       state.isEnabled = request.enabled;
-      chrome.storage.local.set({ enabled: state.isEnabled }, () => {
+      browserAPI.storage.local.set({ enabled: state.isEnabled }).then(() => {
         window.location.reload();
       });
       break;
@@ -310,7 +320,7 @@ const createNavigationObserver = () => {
 const initialize = async () => {
   try {
     // Load the enabled state from storage, defaulting to true.
-    const result = await chrome.storage.local.get(['enabled']);
+    const result = await browserAPI.storage.local.get(['enabled']);
     state.isEnabled = result.enabled !== false;
     log('Enabled =', state.isEnabled);
 
@@ -353,7 +363,7 @@ const initialize = async () => {
 };
 
 // Set up the message listener for communication with the popup.
-chrome.runtime.onMessage.addListener(handleMessage);
+browserAPI.runtime.onMessage.addListener(handleMessage);
 
 // Start the extension when the content script loads.
 log('Extension loaded');

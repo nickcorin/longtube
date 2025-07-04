@@ -4,6 +4,17 @@
  * and communicates with content scripts to control Shorts blocking.
  */
 
+// Use the browser compatibility layer from browser-compat.js.
+// Fallback to chrome API if browserCompat is not available (Chrome doesn't need the compat layer).
+const browserAPI = window.browserCompat || {
+  storage: {
+    local: chrome.storage.local,
+    onChanged: chrome.storage.onChanged,
+  },
+  runtime: chrome.runtime,
+  tabs: chrome.tabs,
+};
+
 // DOM element references for the popup UI.
 const toggle = document.getElementById('toggle');
 const totalBlockedElement = document.getElementById('totalBlocked');
@@ -60,7 +71,7 @@ function updateUI(enabled, totalCount) {
  * Loads and applies the saved theme preference.
  */
 function loadTheme() {
-  chrome.storage.local.get(['theme'], (result) => {
+  browserAPI.storage.local.get(['theme']).then((result) => {
     const theme = result.theme || 'light';
     document.documentElement.setAttribute('data-theme', theme);
   });
@@ -74,7 +85,7 @@ function toggleTheme() {
   const newTheme = currentTheme === 'light' ? 'dark' : 'light';
 
   document.documentElement.setAttribute('data-theme', newTheme);
-  chrome.storage.local.set({ theme: newTheme });
+  browserAPI.storage.local.set({ theme: newTheme });
 }
 
 // Load theme on popup open.
@@ -87,20 +98,22 @@ themeToggle.addEventListener('click', toggleTheme);
  * Loads the initial extension state from storage and updates the UI.
  * This runs when the popup is first opened.
  */
-chrome.storage.local.get(['enabled', 'totalBlockedCount', 'sessionStartCount'], (result) => {
-  const enabled = result.enabled !== false; // Default to true if not set.
-  const totalCount = result.totalBlockedCount || 0;
+browserAPI.storage.local
+  .get(['enabled', 'totalBlockedCount', 'sessionStartCount'])
+  .then((result) => {
+    const enabled = result.enabled !== false; // Default to true if not set.
+    const totalCount = result.totalBlockedCount || 0;
 
-  // Initialize session start count if this is the first time opening the popup.
-  if (result.sessionStartCount === undefined) {
-    sessionStartCount = totalCount;
-    chrome.storage.local.set({ sessionStartCount: totalCount });
-  } else {
-    sessionStartCount = result.sessionStartCount;
-  }
+    // Initialize session start count if this is the first time opening the popup.
+    if (result.sessionStartCount === undefined) {
+      sessionStartCount = totalCount;
+      browserAPI.storage.local.set({ sessionStartCount: totalCount });
+    } else {
+      sessionStartCount = result.sessionStartCount;
+    }
 
-  updateUI(enabled, totalCount);
-});
+    updateUI(enabled, totalCount);
+  });
 
 /**
  * Handles the toggle button click to enable or disable Shorts blocking.
@@ -111,15 +124,15 @@ toggle.addEventListener('click', () => {
   const newEnabled = !enabled;
 
   // Persist the new state to storage.
-  chrome.storage.local.set({ enabled: newEnabled });
+  browserAPI.storage.local.set({ enabled: newEnabled });
 
   // Update the popup UI immediately.
   updateUI(newEnabled, parseInt(totalBlockedElement.textContent));
 
   // Notify all YouTube tabs about the state change.
-  chrome.tabs.query({ url: '*://*.youtube.com/*' }, (tabs) => {
+  browserAPI.tabs.query({ url: '*://*.youtube.com/*' }).then((tabs) => {
     tabs.forEach((tab) => {
-      chrome.tabs.sendMessage(tab.id, {
+      browserAPI.tabs.sendMessage(tab.id, {
         action: 'toggleBlocking',
         enabled: newEnabled,
       });
@@ -132,23 +145,22 @@ toggle.addEventListener('click', () => {
  * This clears both the total count and session count.
  */
 resetButton.addEventListener('click', () => {
-  chrome.storage.local.set(
-    {
+  browserAPI.storage.local
+    .set({
       totalBlockedCount: 0,
       sessionStartCount: 0,
-    },
-    () => {
+    })
+    .then(() => {
       sessionStartCount = 0;
       updateUI(toggle.classList.contains('active'), 0);
-    }
-  );
+    });
 });
 
 /**
  * Listens for storage changes to update the blocked counts in real-time.
  * This allows the popup to reflect changes made by content scripts immediately.
  */
-chrome.storage.onChanged.addListener((changes, namespace) => {
+browserAPI.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local' && changes.totalBlockedCount) {
     const newTotal = changes.totalBlockedCount.newValue || 0;
     totalBlockedElement.textContent = newTotal;

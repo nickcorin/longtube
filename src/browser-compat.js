@@ -90,6 +90,16 @@ const storage = {
       return promisifyAPI(browserAPI.storage.local, 'clear')();
     },
   },
+
+  onChanged: {
+    addListener: (callback) => {
+      browserAPI.storage.onChanged.addListener(callback);
+    },
+
+    removeListener: (callback) => {
+      browserAPI.storage.onChanged.removeListener(callback);
+    },
+  },
 };
 
 // Runtime API wrapper

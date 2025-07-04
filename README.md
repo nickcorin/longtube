@@ -1,9 +1,8 @@
 <div align="center">
   <img src="assets/icon128.png" alt="LongTube Logo" width="128" height="128">
   
-  # 🧠 LongTube - Reclaim Your Attention
-  
-  > Attention is all you need.
+  # LongTube - YouTube without Shorts.
+
 </div>
 
 <div align="center">
@@ -12,102 +11,58 @@
   ![License](https://img.shields.io/badge/license-MIT-green.svg)
   ![Chrome Web Store](https://img.shields.io/badge/chrome-extension-yellow.svg)
   
-  **Your brain deserves better than 60-second dopamine hits.**
+  **Your brain deserves better than 10-second dopamine hits.**
   
 </div>
 
 ## 🎯 Why LongTube?
 
-Short-form content is engineered to be addictive. It hijacks your attention span, fragments your focus, and leaves you scrolling endlessly through meaningless content. **LongTube helps you take back control.**
-
-- **🧠 Protect Your Focus** - Short-form content trains your brain to crave constant stimulation
-- **⏰ Reclaim Your Time** - The average person wastes 2+ hours daily on Shorts
-- **📚 Choose Depth Over Dopamine** - Long-form content builds knowledge; Shorts build addiction
-- **🎬 Support Real Creators** - Encourage thoughtful content over viral snippets
+Short-form content is engineered to be addictive. It hijacks your attention span, fragments your focus, and leaves you scrolling endlessly through meaningless content. **LongTube helps you take back control, and reclaim your attention.**
 
 ## ✨ Features
 
-- **🚫 Total Shorts Elimination** - Removes Shorts from every corner of YouTube
-- **🔄 Anti-Shorts Redirect** - Caught clicking a Short? We'll redirect you to better content
-- **📊 Reality Check Stats** - See exactly how much mindless content you've avoided
-- **⚡ Zero-Tolerance Blocking** - Shorts are hidden before they can even load
-- **🔒 Privacy-First Design** - No tracking, no data collection, just protection
+- **🧼 UI Cleansing** - Removes all evidence of Shorts from YouTube.
+- **🔄 Redirects** - Redirects you if you accidentally open one.
+- **📊 Stats** - Tracks how many Shorts blocked.
+- **🔓 Open Source** - Built for myself. It's free and always will be.
 
 ## 🚀 Installation
 
-### Quick Install
+I haven't submitted this to any of the web stores yet, but you can run it locally.
 
 1. Clone this repository:
+
    ```bash
-   git clone https://github.com/yourusername/longtube.git
+   git clone https://github.com/nickcorin/longtube.git
    cd longtube
    ```
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" (top right)
-4. Click "Load unpacked" and select the project folder
-5. Start enjoying YouTube without the brain rot
 
-## 💪 How It Works
+2. Build the extension:
+   ```bash
+   bun run build
+   ```
 
-LongTube acts as your digital guardian:
+### Chromium-based Browsers (Chrome, Edge, Brave, Arc, Opera):
 
-1. **Instant Blocking** - Injects CSS to hide Shorts before they render
-2. **DOM Patrol** - Continuously monitors and removes new Shorts as they appear
-3. **Smart Detection** - Identifies Shorts in search, homepage, sidebar, and channels
-4. **Redirect Protection** - Navigating to a `/shorts/` URL? Not on our watch
+3. Open the extensions page: `<browser>://extensions/`.
+4. Enable "Developer mode" (usually a toggle in the top right corner).
+5. Click "Load unpacked" and select the `build/chrome/` folder.
 
-## 📈 Track Your Progress
+### Gecko-based Browsers (Firefox, Zen):
 
-The extension shows you:
+3. Open the debugging page: `about:debugging#/runtime/this-firefox`
+4. Click "Load Temporary Add-on"
+5. Navigate to `build/firefox/` and select the `manifest.json` file
 
-- **Shorts Blocked** - Your shield count against mind-numbing content
-- **Time Saved** - Hours of your life not wasted on algorithmic junk food
-- **Current Session** - Real-time protection statistics
-
-## 🛠️ Development
-
-### For Developers
-
-```bash
-# Install dependencies
-bun install
-
-# Run tests
-bun test
-
-# Check code quality
-bun run lint
-
-# Coverage report
-bun run coverage
-```
-
-### Tech Stack
-
-- Vanilla JavaScript (no bloat, just protection)
-- Chrome Extension Manifest V3
-- Bun for lightning-fast testing
-- Zero external dependencies in production
-
-## 🤝 Contributing
-
-Help us fight the good fight against attention hijacking:
-
-1. Fork the repo
-2. Create your feature branch (`git checkout -b feature/save-more-brains`)
-3. Commit your changes (`git commit -m 'Block Shorts in new creative way'`)
-4. Push to the branch (`git push origin feature/save-more-brains`)
-5. Open a Pull Request
+**Note:** Extensions loaded this way are temporary and will be removed when the browser restarts. This is a limitation
+imposed by Firefox until the extension is signed by Mozilla.
 
 ## 🧘 Philosophy
 
-We believe the internet should enhance human potential, not exploit it. Short-form content is designed to be digital crack - keeping you hooked, distracted, and always craving more.
+I semi vibe-coded this for myself because I was sick of having YouTube force Shorts down my throat. It actually works
+really well, and I thought it might help others too.
 
-**LongTube is your defense against algorithmic mind control.**
-
-## 📝 License
-
-MIT License - because protecting minds should be free and open.
+Feel free to use it, share it, contribute, or do anything else with it.
 
 ---
 
