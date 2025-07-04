@@ -25,6 +25,7 @@
     "test:watch": "bun test tests/unit/ --watch",
     "test:coverage": "bun test --coverage",
     "test:e2e": "bun test tests/e2e/",
+    "test:e2e:watch": "bun test tests/e2e/ --watch",
     "test:real-dom": "bun test tests/unit/real-dom.test.js",
     "test:cross-browser": "bun test tests/unit/cross-browser.test.js",
     "test:all": "bun test",
@@ -41,7 +42,9 @@
     "eslint": "^9.30.1",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-prettier": "^5.5.1",
+    "jsdom": "^26.1.0",
     "prettier": "^3.6.2",
-    "puppeteer": "^24.11.2"
+    "puppeteer": "^24.11.2",
+    "web-ext": "^8.8.0"
   }
 }

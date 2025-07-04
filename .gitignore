@@ -41,4 +41,7 @@ npm-debug.log*
 verify-*.html
 
 # Documentation drafts
-BROWSER_DEPLOYMENT_GUIDE.md
+BROWSER_DEPLOYMENT_GUIDE.mdtest-profile-chrome/
+test-profile-firefox/
+test-profile-firefox-configured/
+test-profile-firefox-webext/
