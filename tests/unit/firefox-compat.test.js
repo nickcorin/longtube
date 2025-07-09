@@ -19,7 +19,7 @@ describe('Firefox Compatibility', () => {
     expect(content).not.toContain('import ');
 
     // Verify it uses global assignment
-    expect(content).toContain('window.browserCompat = compat');
+    expect(content).toContain('window.browserCompat = browserCompat');
   });
 
   test('content scripts should handle missing browserCompat gracefully', () => {
@@ -29,9 +29,12 @@ describe('Firefox Compatibility', () => {
     const contentScript = readFileSync(contentPath, 'utf8');
     const popupScript = readFileSync(popupPath, 'utf8');
 
-    // Verify fallback pattern is used
+    // Verify fallback pattern is used in content script
     expect(contentScript).toContain('window.browserCompat ||');
-    expect(popupScript).toContain('window.browserCompat ||');
+
+    // Popup script now checks for browserCompat and logs error if not found
+    expect(popupScript).toContain('window.browserCompat');
+    expect(popupScript).toContain('Browser compatibility layer not loaded');
   });
 
   test('manifest-firefox.json loads browser-compat.js before content.js', () => {

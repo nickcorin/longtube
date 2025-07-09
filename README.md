@@ -1,16 +1,16 @@
 <div align="center">
   <img src="assets/icon128.png" alt="LongTube Logo" width="128" height="128">
 
-  # LongTube - YouTube without Shorts.
+# LongTube - YouTube without Shorts.
 
 </div>
 
 <div align="center">
 
-  ![Extension Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-  ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Extension Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-  **Your brain deserves better than 10-second dopamine hits.**
+**Your brain deserves better than 10-second dopamine hits.**
 
 </div>
 
@@ -53,12 +53,12 @@ I haven't submitted this to any of the web stores yet, but you can run it locall
 4. Click "Load Temporary Add-on".
 5. Navigate to `build/firefox/` and select the `manifest.json` file.
 
-**Note:** This was primarily build for Chrome, but it does work on Gecko browsers.  However, extensions loaded this way are temporary and will be removed when the browser restarts. This is a limitation imposed by Firefox until the extension is signed by Mozilla.
+**Note:** This was primarily build for Chrome, but it does work on Gecko browsers. Unfortunately extensions loaded this way are temporary and will be removed when the browser restarts. This is a limitation imposed by Firefox until the extension is signed by Mozilla.
 
 ## 🧘 Philosophy
 
 I semi vibe-coded this for myself because I was sick of having YouTube force Shorts down my throat. It actually works
-really well, and I thought it might help others too.
+really well, so I thought it might help others too.
 
 Feel free to use it, share it, contribute, or do anything else with it.
 
@@ -66,6 +66,6 @@ Feel free to use it, share it, contribute, or do anything else with it.
 
 <div align="center">
 
-  **Take back your attention. Your future self will thank you.**
+**Take back your attention. Your future self will thank you.**
 
 </div>

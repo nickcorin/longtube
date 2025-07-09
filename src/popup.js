@@ -5,10 +5,10 @@
  */
 
 // Wait for DOM to be ready before initializing
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   // Use the browser compatibility layer
   const browserAPI = window.browserCompat;
-  
+
   if (!browserAPI) {
     console.error('Browser compatibility layer not loaded');
     return;
@@ -67,13 +67,16 @@ document.addEventListener('DOMContentLoaded', function() {
    * Loads and applies the saved theme preference.
    */
   function loadTheme() {
-    browserAPI.storage.local.get(['theme']).then((result) => {
-      const theme = result.theme || 'light';
-      document.documentElement.setAttribute('data-theme', theme);
-    }).catch((error) => {
-      console.error('Failed to load theme:', error);
-      document.documentElement.setAttribute('data-theme', 'light');
-    });
+    browserAPI.storage.local
+      .get(['theme'])
+      .then((result) => {
+        const theme = result.theme || 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+      })
+      .catch((error) => {
+        console.error('Failed to load theme:', error);
+        document.documentElement.setAttribute('data-theme', 'light');
+      });
   }
 
   /**
@@ -108,15 +111,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Notify all YouTube tabs about the state change
       const tabs = await browserAPI.tabs.query({ url: '*://*.youtube.com/*' });
-      
+
       for (const tab of tabs) {
         // Don't await to avoid blocking on tabs that might not respond
-        browserAPI.tabs.sendMessage(tab.id, {
-          action: 'toggleBlocking',
-          enabled: newEnabled,
-        }).catch(() => {
-          // Ignore errors from tabs that can't receive messages
-        });
+        browserAPI.tabs
+          .sendMessage(tab.id, {
+            action: 'toggleBlocking',
+            enabled: newEnabled,
+          })
+          .catch(() => {
+            // Ignore errors from tabs that can't receive messages
+          });
       }
     } catch (error) {
       console.error('Error toggling state:', error);
@@ -131,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         totalBlockedCount: 0,
         sessionStartCount: 0,
       });
-      
+
       sessionStartCount = 0;
       updateUI(toggle.classList.contains('active'), 0);
     } catch (error) {

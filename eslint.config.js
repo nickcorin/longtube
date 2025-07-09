@@ -27,6 +27,7 @@ export default [
         MutationObserver: 'readonly',
         WeakSet: 'readonly',
         HTMLElement: 'readonly',
+        module: 'readonly',
       },
     },
     rules: {

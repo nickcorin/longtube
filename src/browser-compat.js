@@ -55,12 +55,12 @@ const promisifyChrome = (fn, context) => {
         return result;
       }
     }
-    
+
     // For Chrome/Brave, wrap in Promise
     return new Promise((resolve, reject) => {
       // Remove any callbacks from args
-      const filteredArgs = args.filter(arg => typeof arg !== 'function');
-      
+      const filteredArgs = args.filter((arg) => typeof arg !== 'function');
+
       // Add our callback as the last argument
       filteredArgs.push((result) => {
         // Check for errors
@@ -70,7 +70,7 @@ const promisifyChrome = (fn, context) => {
           resolve(result);
         }
       });
-      
+
       // Call the original function with our callback
       fn.apply(context, filteredArgs);
     });
@@ -91,12 +91,14 @@ const createBrowserCompat = () => {
       remove: promisifyChrome(browserAPI.storage.local.remove, browserAPI.storage.local),
       clear: promisifyChrome(browserAPI.storage.local.clear, browserAPI.storage.local),
     },
-    sync: browserAPI.storage.sync ? {
-      get: promisifyChrome(browserAPI.storage.sync.get, browserAPI.storage.sync),
-      set: promisifyChrome(browserAPI.storage.sync.set, browserAPI.storage.sync),
-      remove: promisifyChrome(browserAPI.storage.sync.remove, browserAPI.storage.sync),
-      clear: promisifyChrome(browserAPI.storage.sync.clear, browserAPI.storage.sync),
-    } : null,
+    sync: browserAPI.storage.sync
+      ? {
+          get: promisifyChrome(browserAPI.storage.sync.get, browserAPI.storage.sync),
+          set: promisifyChrome(browserAPI.storage.sync.set, browserAPI.storage.sync),
+          remove: promisifyChrome(browserAPI.storage.sync.remove, browserAPI.storage.sync),
+          clear: promisifyChrome(browserAPI.storage.sync.clear, browserAPI.storage.sync),
+        }
+      : null,
     onChanged: browserAPI.storage.onChanged,
   };
 
@@ -110,13 +112,15 @@ const createBrowserCompat = () => {
   };
 
   // Tabs API
-  const tabs = browserAPI.tabs ? {
-    query: promisifyChrome(browserAPI.tabs.query, browserAPI.tabs),
-    sendMessage: promisifyChrome(browserAPI.tabs.sendMessage, browserAPI.tabs),
-    create: promisifyChrome(browserAPI.tabs.create, browserAPI.tabs),
-    update: promisifyChrome(browserAPI.tabs.update, browserAPI.tabs),
-    remove: promisifyChrome(browserAPI.tabs.remove, browserAPI.tabs),
-  } : null;
+  const tabs = browserAPI.tabs
+    ? {
+        query: promisifyChrome(browserAPI.tabs.query, browserAPI.tabs),
+        sendMessage: promisifyChrome(browserAPI.tabs.sendMessage, browserAPI.tabs),
+        create: promisifyChrome(browserAPI.tabs.create, browserAPI.tabs),
+        update: promisifyChrome(browserAPI.tabs.update, browserAPI.tabs),
+        remove: promisifyChrome(browserAPI.tabs.remove, browserAPI.tabs),
+      }
+    : null;
 
   // Action/BrowserAction API (for extension icon/popup)
   const action = browserAPI.action || browserAPI.browserAction || null;
@@ -153,12 +157,12 @@ const createBrowserCompat = () => {
 // Create and export the compatibility layer
 try {
   const browserCompat = createBrowserCompat();
-  
+
   // Make available globally for all contexts
   if (typeof window !== 'undefined') {
     window.browserCompat = browserCompat;
   }
-  
+
   // Also export for module systems if available
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = browserCompat;
