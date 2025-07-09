@@ -1,6 +1,6 @@
 /**
  * Cross-browser compatibility layer for browser extension APIs
- * Handles differences between Chrome, Firefox, Safari, Edge, and Opera
+ * Provides a unified Promise-based interface that works across all browsers and contexts
  */
 
 // Detect the browser environment
@@ -15,6 +15,8 @@ const getBrowserInfo = () => {
     return { name: 'opera', engine: 'chromium' };
   } else if (ua.includes('Safari/') && !ua.includes('Chrome/')) {
     return { name: 'safari', engine: 'webkit' };
+  } else if (ua.includes('Brave/') || (ua.includes('Chrome/') && navigator.brave)) {
+    return { name: 'brave', engine: 'chromium' };
   } else if (ua.includes('Chrome/')) {
     return { name: 'chrome', engine: 'chromium' };
   }
@@ -24,8 +26,8 @@ const getBrowserInfo = () => {
 
 const browserInfo = getBrowserInfo();
 
-// Use the appropriate API namespace
-const browserAPI = (() => {
+// Get the appropriate API object (chrome or browser)
+const getBrowserAPI = () => {
   // Firefox uses 'browser' namespace
   if (typeof browser !== 'undefined' && browser.runtime) {
     return browser;
@@ -36,171 +38,131 @@ const browserAPI = (() => {
   }
   // Fallback
   return null;
-})();
+};
 
-// Polyfill for Promise-based APIs (Firefox style) on Chrome
-const promisifyAPI = (api, method) => {
+const browserAPI = getBrowserAPI();
+
+/**
+ * Creates a Promise wrapper for callback-based Chrome APIs
+ * Handles both APIs that already return Promises (Firefox) and callback-based APIs (Chrome)
+ */
+const promisifyChrome = (fn, context) => {
   return (...args) => {
+    // Check if this is Firefox and the API already returns a Promise
+    if (browserInfo.name === 'firefox') {
+      const result = fn.apply(context, args);
+      if (result && typeof result.then === 'function') {
+        return result;
+      }
+    }
+    
+    // For Chrome/Brave, wrap in Promise
     return new Promise((resolve, reject) => {
-      const callback = (result) => {
+      // Remove any callbacks from args
+      const filteredArgs = args.filter(arg => typeof arg !== 'function');
+      
+      // Add our callback as the last argument
+      filteredArgs.push((result) => {
+        // Check for errors
         if (browserAPI.runtime.lastError) {
           reject(new Error(browserAPI.runtime.lastError.message));
         } else {
           resolve(result);
         }
-      };
-
-      // Check if the method already returns a Promise (Firefox)
-      const result = api[method](...args, callback);
-      if (result && typeof result.then === 'function') {
-        return result;
-      }
+      });
+      
+      // Call the original function with our callback
+      fn.apply(context, filteredArgs);
     });
   };
 };
 
-// Storage API wrapper with Promise support
-const storage = {
-  local: {
-    get: (keys) => {
-      if (browserInfo.name === 'firefox') {
-        return browserAPI.storage.local.get(keys);
-      }
-      return promisifyAPI(browserAPI.storage.local, 'get')(keys);
-    },
-
-    set: (items) => {
-      if (browserInfo.name === 'firefox') {
-        return browserAPI.storage.local.set(items);
-      }
-      return promisifyAPI(browserAPI.storage.local, 'set')(items);
-    },
-
-    remove: (keys) => {
-      if (browserInfo.name === 'firefox') {
-        return browserAPI.storage.local.remove(keys);
-      }
-      return promisifyAPI(browserAPI.storage.local, 'remove')(keys);
-    },
-
-    clear: () => {
-      if (browserInfo.name === 'firefox') {
-        return browserAPI.storage.local.clear();
-      }
-      return promisifyAPI(browserAPI.storage.local, 'clear')();
-    },
-  },
-
-  onChanged: {
-    addListener: (callback) => {
-      browserAPI.storage.onChanged.addListener(callback);
-    },
-
-    removeListener: (callback) => {
-      browserAPI.storage.onChanged.removeListener(callback);
-    },
-  },
-};
-
-// Runtime API wrapper
-const runtime = {
-  sendMessage: (message) => {
-    if (browserInfo.name === 'firefox') {
-      return browserAPI.runtime.sendMessage(message);
-    }
-    return promisifyAPI(browserAPI.runtime, 'sendMessage')(message);
-  },
-
-  onMessage: {
-    addListener: (callback) => {
-      // Convert callback to handle both Chrome and Firefox styles
-      const wrappedCallback = (message, sender, sendResponse) => {
-        const result = callback(message, sender, sendResponse);
-
-        // Firefox expects true to be returned for async responses
-        if (result instanceof Promise) {
-          result.then(sendResponse);
-          return true; // Keep message channel open
-        }
-
-        return result;
-      };
-
-      browserAPI.runtime.onMessage.addListener(wrappedCallback);
-    },
-
-    removeListener: (callback) => {
-      browserAPI.runtime.onMessage.removeListener(callback);
-    },
-  },
-
-  getURL: (path) => browserAPI.runtime.getURL(path),
-
-  getManifest: () => browserAPI.runtime.getManifest(),
-};
-
-// Tabs API wrapper (for potential future use)
-const tabs = {
-  query: (queryInfo) => {
-    if (browserInfo.name === 'firefox') {
-      return browserAPI.tabs.query(queryInfo);
-    }
-    return promisifyAPI(browserAPI.tabs, 'query')(queryInfo);
-  },
-
-  sendMessage: (tabId, message) => {
-    if (browserInfo.name === 'firefox') {
-      return browserAPI.tabs.sendMessage(tabId, message);
-    }
-    return promisifyAPI(browserAPI.tabs, 'sendMessage')(tabId, message);
-  },
-};
-
-// Action API wrapper (handles browser action / page action differences)
-const action = (() => {
-  // Safari might still use browserAction
-  if (browserAPI.browserAction) {
-    return browserAPI.browserAction;
+// Create the unified browser compatibility API
+const createBrowserCompat = () => {
+  if (!browserAPI) {
+    throw new Error('No browser extension API found');
   }
-  // Modern browsers use action
-  return browserAPI.action;
-})();
 
-// Feature detection utilities
-const features = {
-  // Check if declarativeNetRequest is available (for future blocking features)
-  hasDeclarativeNetRequest: () => {
-    return browserAPI && browserAPI.declarativeNetRequest !== undefined;
-  },
+  // Storage API with Promise support
+  const storage = {
+    local: {
+      get: promisifyChrome(browserAPI.storage.local.get, browserAPI.storage.local),
+      set: promisifyChrome(browserAPI.storage.local.set, browserAPI.storage.local),
+      remove: promisifyChrome(browserAPI.storage.local.remove, browserAPI.storage.local),
+      clear: promisifyChrome(browserAPI.storage.local.clear, browserAPI.storage.local),
+    },
+    sync: browserAPI.storage.sync ? {
+      get: promisifyChrome(browserAPI.storage.sync.get, browserAPI.storage.sync),
+      set: promisifyChrome(browserAPI.storage.sync.set, browserAPI.storage.sync),
+      remove: promisifyChrome(browserAPI.storage.sync.remove, browserAPI.storage.sync),
+      clear: promisifyChrome(browserAPI.storage.sync.clear, browserAPI.storage.sync),
+    } : null,
+    onChanged: browserAPI.storage.onChanged,
+  };
 
-  // Check if webRequest blocking is available (Firefox-specific)
-  hasWebRequestBlocking: () => {
-    return (
-      browserAPI &&
-      browserAPI.webRequest &&
-      browserAPI.webRequest.onBeforeRequest &&
-      browserInfo.name === 'firefox'
-    );
-  },
+  // Runtime API
+  const runtime = {
+    sendMessage: promisifyChrome(browserAPI.runtime.sendMessage, browserAPI.runtime),
+    onMessage: browserAPI.runtime.onMessage,
+    getURL: (path) => browserAPI.runtime.getURL(path),
+    getManifest: () => browserAPI.runtime.getManifest(),
+    lastError: browserAPI.runtime.lastError,
+  };
 
-  // Check if the browser supports service workers (not Firefox)
-  hasServiceWorker: () => {
-    return 'serviceWorker' in navigator && browserInfo.name !== 'firefox';
-  },
+  // Tabs API
+  const tabs = browserAPI.tabs ? {
+    query: promisifyChrome(browserAPI.tabs.query, browserAPI.tabs),
+    sendMessage: promisifyChrome(browserAPI.tabs.sendMessage, browserAPI.tabs),
+    create: promisifyChrome(browserAPI.tabs.create, browserAPI.tabs),
+    update: promisifyChrome(browserAPI.tabs.update, browserAPI.tabs),
+    remove: promisifyChrome(browserAPI.tabs.remove, browserAPI.tabs),
+  } : null;
+
+  // Action/BrowserAction API (for extension icon/popup)
+  const action = browserAPI.action || browserAPI.browserAction || null;
+
+  // Feature detection utilities
+  const features = {
+    hasDeclarativeNetRequest: () => {
+      return browserAPI && browserAPI.declarativeNetRequest !== undefined;
+    },
+    hasWebRequestBlocking: () => {
+      return (
+        browserAPI &&
+        browserAPI.webRequest &&
+        browserAPI.webRequest.onBeforeRequest &&
+        browserInfo.name === 'firefox'
+      );
+    },
+    hasServiceWorker: () => {
+      return 'serviceWorker' in navigator && browserInfo.name !== 'firefox';
+    },
+  };
+
+  return {
+    browser: browserInfo,
+    api: browserAPI,
+    storage,
+    runtime,
+    tabs,
+    action,
+    features,
+  };
 };
 
-// Export the compatibility layer
-const compat = {
-  browser: browserInfo,
-  api: browserAPI,
-  storage,
-  runtime,
-  tabs,
-  action,
-  features,
-};
-
-// Make available globally for content scripts
-if (typeof window !== 'undefined') {
-  window.browserCompat = compat;
+// Create and export the compatibility layer
+try {
+  const browserCompat = createBrowserCompat();
+  
+  // Make available globally for all contexts
+  if (typeof window !== 'undefined') {
+    window.browserCompat = browserCompat;
+  }
+  
+  // Also export for module systems if available
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = browserCompat;
+  }
+} catch (error) {
+  console.error('Failed to initialize browser compatibility layer:', error);
 }
