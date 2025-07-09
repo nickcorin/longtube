@@ -1,18 +1,17 @@
 <div align="center">
   <img src="assets/icon128.png" alt="LongTube Logo" width="128" height="128">
-  
+
   # LongTube - YouTube without Shorts.
 
 </div>
 
 <div align="center">
-  
+
   ![Extension Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
   ![License](https://img.shields.io/badge/license-MIT-green.svg)
-  ![Chrome Web Store](https://img.shields.io/badge/chrome-extension-yellow.svg)
-  
+
   **Your brain deserves better than 10-second dopamine hits.**
-  
+
 </div>
 
 ## 🎯 Why LongTube?
@@ -50,12 +49,11 @@ I haven't submitted this to any of the web stores yet, but you can run it locall
 
 ### Gecko-based Browsers (Firefox, Zen):
 
-3. Open the debugging page: `about:debugging#/runtime/this-firefox`
-4. Click "Load Temporary Add-on"
-5. Navigate to `build/firefox/` and select the `manifest.json` file
+3. Open the debugging page: `about:debugging#/runtime/this-firefox`.
+4. Click "Load Temporary Add-on".
+5. Navigate to `build/firefox/` and select the `manifest.json` file.
 
-**Note:** Extensions loaded this way are temporary and will be removed when the browser restarts. This is a limitation
-imposed by Firefox until the extension is signed by Mozilla.
+**Note:** This was primarily build for Chrome, but it does work on Gecko browsers.  However, extensions loaded this way are temporary and will be removed when the browser restarts. This is a limitation imposed by Firefox until the extension is signed by Mozilla.
 
 ## 🧘 Philosophy
 
@@ -67,9 +65,7 @@ Feel free to use it, share it, contribute, or do anything else with it.
 ---
 
 <div align="center">
-  
+
   **Take back your attention. Your future self will thank you.**
-  
-  Built for humans who choose intention over algorithm.
-  
+
 </div>
