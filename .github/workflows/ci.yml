@@ -65,10 +65,9 @@ jobs:
         run: |
           export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
           export PUPPETEER_EXECUTABLE_PATH=$(which chrome)
-          bun test tests/e2e/extension-loading.test.js
+          bun run test:e2e --timeout 60000
         env:
           CI: true
-        continue-on-error: true  # E2E tests can be flaky in CI
 
   build:
     name: Build Extension
