@@ -74,7 +74,7 @@ export async function launchChromeWithExtension() {
   ];
 
   const browser = await puppeteer.launch({
-    headless: false, // Extensions require headful mode
+    headless: false, // Extensions require headful mode (we use xvfb in CI)
     args,
     defaultViewport: { width: 1280, height: 720 },
     ignoreHTTPSErrors: true,
@@ -83,6 +83,7 @@ export async function launchChromeWithExtension() {
     handleSIGHUP: false,
     dumpio: false,
     protocolTimeout: 300000, // 5 minutes
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
   });
 
   // Set up a cleanup handler
