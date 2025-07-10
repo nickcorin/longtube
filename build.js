@@ -17,7 +17,7 @@ const BUILD_DIR = 'build';
 
 // Source file mappings for the build process.
 const FILE_MAPPINGS = {
-  common: ['src/popup.html', 'src/content.js', 'src/popup.js'],
+  common: ['src/popup.html', 'src/content.js', 'src/popup.js', 'src/browser-compat.js'],
   assets: ['assets/icon16.png', 'assets/icon32.png', 'assets/icon48.png', 'assets/icon128.png'],
   manifest: {
     chrome: 'manifest.json',
@@ -26,7 +26,7 @@ const FILE_MAPPINGS = {
 };
 
 // Firefox-specific files that need additional processing.
-const FIREFOX_SPECIFIC_FILES = ['src/browser-compat.js'];
+const FIREFOX_SPECIFIC_FILES = [];
 
 /**
  * Removes existing build and distribution directories.

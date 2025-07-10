@@ -5,7 +5,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/longtube"
+    "url": "https://github.com/nickcorin/longtube"
   },
   "keywords": [
     "youtube",
@@ -24,7 +24,8 @@
     "test": "bun test tests/unit/",
     "test:watch": "bun test tests/unit/ --watch",
     "test:coverage": "bun test --coverage",
-    "test:e2e": "bun test tests/e2e/",
+    "test:e2e": "bun run build && USE_BUILD_EXTENSION=1 bun test tests/e2e/",
+    "test:e2e:dev": "bun test tests/e2e/",
     "test:e2e:watch": "bun test tests/e2e/ --watch",
     "test:real-dom": "bun test tests/unit/real-dom.test.js",
     "test:cross-browser": "bun test tests/unit/cross-browser.test.js",
@@ -46,5 +47,8 @@
     "prettier": "^3.6.2",
     "puppeteer": "^24.11.2",
     "web-ext": "^8.8.0"
+  },
+  "dependencies": {
+    "sharp": "^0.34.3"
   }
 }
