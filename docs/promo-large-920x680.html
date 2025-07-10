@@ -1,0 +1,249 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LongTube - Large Promotional Tile (920x680)</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        width: 920px;
+        height: 680px;
+        overflow: hidden;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .tile-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 60px;
+        box-sizing: border-box;
+        color: white;
+      }
+
+      .logo-wrapper {
+        position: relative;
+        margin-bottom: 40px;
+      }
+
+      .logo {
+        width: 120px;
+        height: 120px;
+        border-radius: 28px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        border: 4px solid rgba(255, 255, 255, 0.9);
+      }
+
+      .logo-badge {
+        position: absolute;
+        bottom: -12px;
+        right: -12px;
+        background: #ef4444;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        font-weight: bold;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        border: 3px solid white;
+      }
+
+      .title {
+        font-size: 64px;
+        font-weight: 800;
+        margin: 0 0 20px 0;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        text-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      .tagline {
+        font-size: 28px;
+        margin: 0 0 40px 0;
+        line-height: 1.4;
+        opacity: 0.95;
+        font-weight: 500;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        max-width: 600px;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin-bottom: 50px;
+        width: 100%;
+        max-width: 700px;
+      }
+
+      .feature {
+        text-align: center;
+        padding: 24px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        transition: transform 0.2s ease;
+      }
+
+      .feature:hover {
+        transform: translateY(-2px);
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .feature-emoji {
+        font-size: 48px;
+        margin-bottom: 16px;
+        display: block;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+      }
+
+      .feature-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .feature-desc {
+        font-size: 14px;
+        margin: 0;
+        line-height: 1.5;
+        opacity: 0.9;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .cta-section {
+        background: rgba(255, 255, 255, 0.95);
+        color: #667eea;
+        padding: 20px 48px;
+        border-radius: 40px;
+        font-size: 20px;
+        font-weight: 700;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        display: inline-block;
+        transition: transform 0.2s ease;
+      }
+
+      .cta-section:hover {
+        transform: scale(1.05);
+      }
+
+      .pattern {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+          radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .decorative-circles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .circle {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .circle-1 {
+        width: 200px;
+        height: 200px;
+        top: -100px;
+        left: -100px;
+      }
+
+      .circle-2 {
+        width: 300px;
+        height: 300px;
+        bottom: -150px;
+        right: -150px;
+      }
+
+      .circle-3 {
+        width: 150px;
+        height: 150px;
+        top: 50%;
+        right: -75px;
+      }
+
+      .open-source-badge {
+        position: absolute;
+        bottom: 30px;
+        right: 30px;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tile-container">
+      <div class="pattern"></div>
+      <div class="decorative-circles">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+        <div class="circle circle-3"></div>
+      </div>
+
+      <div class="logo-wrapper">
+        <img src="../assets/icon128.png" alt="LongTube" class="logo" />
+      </div>
+
+      <h1 class="title">LongTube</h1>
+      <p class="tagline">Take back your attention from YouTube Shorts</p>
+
+      <div class="features">
+        <div class="feature">
+          <span class="feature-emoji">🚫</span>
+          <h3 class="feature-title">Complete Blocking</h3>
+          <p class="feature-desc">Removes all Shorts from your YouTube experience</p>
+        </div>
+        <div class="feature">
+          <span class="feature-emoji">⏱️</span>
+          <h3 class="feature-title">Time Tracking</h3>
+          <p class="feature-desc">See how much time you've saved from scrolling</p>
+        </div>
+        <div class="feature">
+          <span class="feature-emoji">🎯</span>
+          <h3 class="feature-title">Stay Focused</h3>
+          <p class="feature-desc">Enjoy meaningful content without distractions</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

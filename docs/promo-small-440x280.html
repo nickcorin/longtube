@@ -1,0 +1,129 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>LongTube - Small Promotional Tile (440x280)</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        width: 440px;
+        height: 280px;
+        overflow: hidden;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .tile-container {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        box-sizing: border-box;
+        padding: 30px;
+        color: white;
+      }
+
+      .logo-wrapper {
+        position: relative;
+        margin-bottom: 24px;
+      }
+
+      .logo {
+        width: 80px;
+        height: 80px;
+        border-radius: 18px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        border: 3px solid rgba(255, 255, 255, 0.9);
+      }
+
+      .logo-badge {
+        position: absolute;
+        bottom: -8px;
+        right: -8px;
+        background: #ef4444;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: 2px solid white;
+      }
+
+      .title {
+        font-size: 36px;
+        font-weight: 800;
+        margin: 0 0 12px 0;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .tagline {
+        font-size: 16px;
+        margin: 0 0 24px 0;
+        line-height: 1.4;
+        opacity: 0.95;
+        font-weight: 500;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .features {
+        display: flex;
+        gap: 8px;
+        font-size: 11px;
+        opacity: 0.9;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .feature {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 4px 10px;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .pattern {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image:
+          radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tile-container">
+      <div class="pattern"></div>
+      <div class="logo-wrapper">
+        <img src="../assets/icon128.png" alt="LongTube" class="logo" />
+      </div>
+      <h1 class="title">LongTube</h1>
+      <p class="tagline">YouTube without Shorts</p>
+      <div class="features">
+        <div class="feature">Block Shorts</div>
+        <div class="feature">Save Time</div>
+        <div class="feature">Stay Focused</div>
+      </div>
+    </div>
+  </body>
+</html>
