@@ -62,7 +62,7 @@ async function generateWebstoreScreenshots() {
 
       // Disable cache to ensure fresh images
       await page.setCacheEnabled(false);
-      
+
       const filePath = `file://${screenshot.input}`;
       await page.goto(filePath, { waitUntil: 'networkidle0' });
 
