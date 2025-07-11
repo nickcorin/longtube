@@ -66,11 +66,23 @@ async function generateWebstoreScreenshots() {
       // Wait a bit for any animations or loading
       await new Promise((r) => setTimeout(r, 1000));
 
-      await page.screenshot({
-        path: screenshot.output,
-        fullPage: false,
-        type: 'png',
-      });
+      // Check if this is a promo image (no screenshot-container)
+      const hasScreenshotContainer = await page.$('.screenshot-container');
+      
+      if (hasScreenshotContainer) {
+        // For regular screenshots, capture just the container
+        await hasScreenshotContainer.screenshot({
+          path: screenshot.output,
+          type: 'png',
+        });
+      } else {
+        // For promo images, capture the full viewport
+        await page.screenshot({
+          path: screenshot.output,
+          fullPage: false,
+          type: 'png',
+        });
+      }
 
       console.log(`✓ ${path.basename(screenshot.output)}`);
       console.log(`  ${screenshot.description}`);
