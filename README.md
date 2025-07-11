@@ -32,10 +32,10 @@ LongTube is an opt-out for the times you want to focus on long-form content.
 
 ## 🚀 Features
 
-- **🚫 Removes all Shorts** from YouTube's UI
-- **↪️ Redirects** away from Shorts URLs
-- **📊 Tracks** how many Shorts you've avoided
-- **🔓 Open source** forever
+- **🚫 Removes all Shorts** from YouTube's UI.
+- **↪️ Redirects** away from Shorts URLs.
+- **📊 Tracks** how many Shorts you've avoided.
+- **🔓 Open source** forever.
 
 ## 📦 Installation
 
@@ -48,18 +48,15 @@ Download the latest release from [GitHub Releases](https://github.com/nickcorin/
 
 **Chromium Browsers (Chrome/Edge/Brave):**
 
-1. Navigate to your browser's extensions page:
-   - Chrome: [chrome://extensions](chrome://extensions)
-   - Edge: [edge://extensions](edge://extensions)
-   - Brave: [brave://extensions](brave://extensions)
-2. Enable "Developer mode"
-3. Drag and drop the `chrome.zip` file into the window
+1. Navigate to your browser's extensions page (e.g., `chrome://extensions`).
+2. Enable "Developer mode".
+3. Drag and drop the `chrome.zip` file into the window.
 
 **Gecko Browsers (Firefox/Zen):**
 
-1. Navigate to [about:debugging#/runtime/this-firefox](about:debugging#/runtime/this-firefox)
-2. Click "Load Temporary Add-on"
-3. Select the `firefox.zip` file
+1. Navigate to `about:debugging#/runtime/this-firefox`.
+2. Click "Load Temporary Add-on".
+3. Select the `firefox.zip` file.
 
 > [!NOTE]
 > Firefox temporary add-ons are removed when the browser closes. This is a Mozilla limitation for unsigned extensions.
