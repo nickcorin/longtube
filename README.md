@@ -16,8 +16,6 @@ YouTube without Shorts.
 
 <div align="center">
   
-### 🚀 Download Now
-
 [![Download for Chrome](https://img.shields.io/badge/Download%20for-Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://github.com/nickcorin/longtube/releases/latest/download/chrome.zip)
 [![Download for Firefox](https://img.shields.io/badge/Download%20for-Firefox-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://github.com/nickcorin/longtube/releases/latest/download/firefox.zip)
 
@@ -32,7 +30,7 @@ content.
 
 LongTube is an opt-out for the times you want to focus on long-form content.
 
-## ✨ Features
+## 🚀 Features
 
 - **🚫 Removes all Shorts** from YouTube's UI
 - **↪️ Redirects** away from Shorts URLs
@@ -41,7 +39,7 @@ LongTube is an opt-out for the times you want to focus on long-form content.
 
 ## 📦 Installation
 
-The extension has been submitted to the Chrome Web Store and the Firefox Add-Ons registry, but for now you need to add
+The extension has been submitted to the Chrome Web Store and the Firefox Add-Ons registry, but for now you can add
 it locally.
 
 ### Download Release
@@ -50,18 +48,21 @@ Download the latest release from [GitHub Releases](https://github.com/nickcorin/
 
 **Chromium Browsers (Chrome/Edge/Brave):**
 
-- Navigate to `chrome://extensions/`.
-- Enable "Developer mode".
-- Drag and drop the `{browser}.zip` file into the window.
+1. Navigate to your browser's extensions page:
+   - Chrome: [chrome://extensions](chrome://extensions)
+   - Edge: [edge://extensions](edge://extensions)
+   - Brave: [brave://extensions](brave://extensions)
+2. Enable "Developer mode"
+3. Drag and drop the `chrome.zip` file into the window
 
 **Gecko Browsers (Firefox/Zen):**
 
-- Navigate to `about:debugging#/runtime/this-firefox`.
-- Click "Load Temporary Add-on".
-- Load the `{browser}.zip` file.
+1. Navigate to [about:debugging#/runtime/this-firefox](about:debugging#/runtime/this-firefox)
+2. Click "Load Temporary Add-on"
+3. Select the `firefox.zip` file
 
-> Note: Temporary add-ons are removed on exit. This is a limitation enforced by Mozilla until the extension is signed
-> by them. I'm working on it.
+> [!NOTE]
+> Firefox temporary add-ons are removed when the browser closes. This is a Mozilla limitation for unsigned extensions.
 
 ## 🤝 Contributing
 
