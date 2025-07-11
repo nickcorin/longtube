@@ -1,7 +1,9 @@
 <div align="center">
   <img src="assets/icon128.png" alt="LongTube Logo" width="128" height="128">
 
-# LongTube - YouTube without Shorts
+# LongTube
+
+YouTube without Shorts.
 
 ![Extension Version](https://img.shields.io/badge/version-0.1.0--beta.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)

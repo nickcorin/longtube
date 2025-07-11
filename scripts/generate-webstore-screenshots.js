@@ -70,10 +70,11 @@ async function generateWebstoreScreenshots() {
       const hasScreenshotContainer = await page.$('.screenshot-container');
       
       if (hasScreenshotContainer) {
-        // For regular screenshots, capture just the container
+        // For regular screenshots, capture just the container with transparency
         await hasScreenshotContainer.screenshot({
           path: screenshot.output,
           type: 'png',
+          omitBackground: true,
         });
       } else {
         // For promo images, capture the full viewport
