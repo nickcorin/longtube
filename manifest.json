@@ -9,10 +9,7 @@
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   },
-  "permissions": [
-    "storage",
-    "activeTab"
-  ],
+  "permissions": ["storage", "activeTab"],
   "action": {
     "default_popup": "src/popup.html",
     "default_icon": {
@@ -24,12 +21,8 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "*://*.youtube.com/*"
-      ],
-      "js": [
-        "src/content.js"
-      ],
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["src/content.js"],
       "run_at": "document_start",
       "all_frames": true
     }

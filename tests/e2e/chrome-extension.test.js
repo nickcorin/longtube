@@ -193,7 +193,16 @@ describe('Shorts Blocking Functionality', () => {
     const page = await createPage(browser);
 
     try {
-      await page.goto('https://www.youtube.com', { waitUntil: 'domcontentloaded' });
+      try {
+        await page.goto('https://www.youtube.com', { waitUntil: 'domcontentloaded' });
+      } catch (error) {
+        // If navigation was "aborted" but we're on YouTube, continue
+        if (error.message.includes('ERR_ABORTED') && page.url().includes('youtube.com')) {
+          // Navigation succeeded despite the error
+        } else {
+          throw error;
+        }
+      }
       await waitForExtensionReady(page);
 
       // The extension tracks blocked count internally
