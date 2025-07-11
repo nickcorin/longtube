@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: bun install
       
+      - name: Build extension
+        run: bun run build
+      
       - name: Install Chrome
         uses: browser-actions/setup-chrome@v1
       
@@ -31,9 +34,6 @@ jobs:
           xvfb-run -a bun test --timeout 60000
         env:
           CI: true
-      
-      - name: Build extension
-        run: bun run build
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
