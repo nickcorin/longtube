@@ -21,8 +21,16 @@ jobs:
       - name: Install dependencies
         run: bun install
       
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+      
       - name: Run tests
-        run: bun test
+        run: |
+          export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+          export PUPPETEER_EXECUTABLE_PATH=$(which chrome)
+          xvfb-run -a bun test --timeout 60000
+        env:
+          CI: true
       
       - name: Build extension
         run: bun run build
