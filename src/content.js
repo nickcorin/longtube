@@ -342,7 +342,9 @@ const initialize = async () => {
       domObserver.observe(document.body, { childList: true, subtree: true });
     } else {
       document.addEventListener('DOMContentLoaded', () => {
-        domObserver.observe(document.body, { childList: true, subtree: true });
+        if (document.body) {
+          domObserver.observe(document.body, { childList: true, subtree: true });
+        }
       });
     }
 

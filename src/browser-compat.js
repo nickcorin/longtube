@@ -3,6 +3,7 @@
  * Provides a unified Promise-based interface that works across all browsers and contexts
  */
 
+(function() {
 // Detect the browser environment
 const getBrowserInfo = () => {
   const ua = navigator.userAgent;
@@ -170,3 +171,4 @@ try {
 } catch (error) {
   console.error('Failed to initialize browser compatibility layer:', error);
 }
+})();
