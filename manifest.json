@@ -3,16 +3,16 @@
   "name": "LongTube",
   "version": "0.1.0",
   "description": "Remove YouTube Shorts to focus on long-form content",
-
   "icons": {
     "16": "assets/icon16.png",
     "32": "assets/icon32.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   },
-
-  "permissions": ["storage", "activeTab"],
-
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
   "action": {
     "default_popup": "src/popup.html",
     "default_icon": {
@@ -22,11 +22,14 @@
       "128": "assets/icon128.png"
     }
   },
-
   "content_scripts": [
     {
-      "matches": ["*://*.youtube.com/*"],
-      "js": ["src/content.js"],
+      "matches": [
+        "*://*.youtube.com/*"
+      ],
+      "js": [
+        "src/content.js"
+      ],
       "run_at": "document_start",
       "all_frames": true
     }

@@ -39,13 +39,6 @@ async function generateWebstoreScreenshots() {
     },
     // Screenshots
     {
-      input: path.join(docsDir, 'screenshot-blocked-1280x800.html'),
-      output: path.join(imagesDir, 'screenshot-blocked-1280x800.png'),
-      width: 1280,
-      height: 800,
-      description: 'Screenshot showing YouTube with Shorts blocked',
-    },
-    {
       input: path.join(docsDir, 'screenshot-popup-1280x800.html'),
       output: path.join(imagesDir, 'screenshot-popup-1280x800.png'),
       width: 1280,

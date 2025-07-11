@@ -58,9 +58,9 @@ writeFileSync('package.json', JSON.stringify(packageJson, null, 2) + '\n');
 
 // Update Firefox manifest if it exists
 try {
-  const firefoxManifest = JSON.parse(readFileSync('manifest.firefox.json', 'utf8'));
+  const firefoxManifest = JSON.parse(readFileSync('manifest-firefox.json', 'utf8'));
   firefoxManifest.version = newVersion.split('-')[0];
-  writeFileSync('manifest.firefox.json', JSON.stringify(firefoxManifest, null, 2) + '\n');
+  writeFileSync('manifest-firefox.json', JSON.stringify(firefoxManifest, null, 2) + '\n');
 } catch (e) {
   // Firefox manifest might not exist
 }
