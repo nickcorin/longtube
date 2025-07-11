@@ -8,6 +8,10 @@
 
 </div>
 
+<div align="center">
+  <img src="docs/images/screenshot-popup-1280x800.png" alt="LongTube Extension Popup" width="400">
+</div>
+
 ## What?
 
 LongTube is a browser extension that removes all short-form content from your YouTube UI.
