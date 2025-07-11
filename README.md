@@ -1,71 +1,56 @@
 <div align="center">
   <img src="assets/icon128.png" alt="LongTube Logo" width="128" height="128">
 
-# LongTube - YouTube without Shorts.
+# LongTube
 
-</div>
-
-<div align="center">
+**YouTube without Shorts**
 
 ![Extension Version](https://img.shields.io/badge/version-0.1.0--beta.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-**Your brain deserves better than 10-second dopamine hits.**
-
 </div>
 
-## 🎯 Why LongTube?
+## Features
 
-Short-form content is engineered to be addictive. It hijacks your attention span, fragments your focus, and leaves you scrolling endlessly through meaningless content. **LongTube helps you take back control, and reclaim your attention.**
+- **Removes all Shorts** from YouTube's UI.
+- **Redirects** away from Shorts URLs.
+- **Tracks** how many Shorts you've avoided.
+- **Open source** forever.
 
-## ✨ Features
+## Installation
 
-- **🧼 UI Cleansing** - Removes all evidence of Shorts from YouTube.
-- **🔄 Redirects** - Redirects you if you accidentally open one.
-- **📊 Stats** - Tracks how many Shorts blocked.
-- **🔓 Open Source** - Built for myself. It's free and always will be.
+### Download Release
 
-## 🚀 Installation
+Download the latest release from [GitHub Releases](https://github.com/nickcorin/longtube/releases).
 
-I haven't submitted this to any of the web stores yet, but you can run it locally.
+**Chromium Browsers (Chrome/Edge/Brave):**
 
-1. Clone this repository:
+- Navigate to `chrome://extensions/`.
+- Enable "Developer mode".
+- Drag and drop the `{browser}.zip` file into the window.
 
-   ```bash
-   git clone https://github.com/nickcorin/longtube.git
-   cd longtube
-   ```
+**Gecko Browsers (Firefox/Zen):**
 
-2. Build the extension:
-   ```bash
-   bun run build
-   ```
+- Navigate to `about:debugging#/runtime/this-firefox`.
+- Click "Load Temporary Add-on".
+- Load the `{browser}.zip` file.
 
-### Chromium-based Browsers (Chrome, Edge, Brave, Arc, Opera):
+> Note: Temporary add-ons are removed on exit. This is a limitation enforced by Mozilla until the extension is signed
+> by them. I'm working on it.
 
-3. Open the extensions page: `<browser>://extensions/`.
-4. Enable "Developer mode" (usually a toggle in the top right corner).
-5. Click "Load unpacked" and select the `build/chrome/` folder.
+## License
 
-### Gecko-based Browsers (Firefox, Zen):
+MIT.
 
-3. Open the debugging page: `about:debugging#/runtime/this-firefox`.
-4. Click "Load Temporary Add-on".
-5. Navigate to `build/firefox/` and select the `manifest.json` file.
+I vibe-coded this for myself because I was tired of being force fed short-form content. It happens to work really well,
+so I thought I'd share it with others.
 
-**Note:** This was primarily build for Chrome, but it does work on Gecko browsers. Unfortunately extensions loaded this way are temporary and will be removed when the browser restarts. This is a limitation imposed by Firefox until the extension is signed by Mozilla.
-
-## 🧘 Philosophy
-
-I semi vibe-coded this for myself because I was sick of having YouTube force Shorts down my throat. It actually works
-really well, so I thought it might help others too.
-
-Feel free to use it, share it, contribute, or do anything else with it.
+Feel free to use it, share it, or contribute.
 
 ---
 
 <div align="center">
 
-**Take back your attention. Your future self will thank you.**
+**Focus on the content you want to see.**
 
 </div>
