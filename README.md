@@ -12,32 +12,37 @@
   <img src="docs/images/screenshot-popup-1280x800.png" alt="LongTube Extension Popup">
 </div>
 
-## What?
+<div align="center">
+  
+### 🚀 Download Now
+
+[![Download for Chrome](https://img.shields.io/badge/Download%20for-Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://github.com/nickcorin/longtube/releases/latest/download/chrome.zip)
+[![Download for Firefox](https://img.shields.io/badge/Download%20for-Firefox-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://github.com/nickcorin/longtube/releases/latest/download/firefox.zip)
+
+</div>
+
+## 🎯 What is LongTube?
 
 LongTube is a browser extension that removes all short-form content from your YouTube UI.
-
-### Features
-
-- **Removes all Shorts** from YouTube's UI.
-- **Redirects** away from Shorts URLs.
-- **Tracks** how many Shorts you've avoided.
-- **Open source** forever.
-
-## Why?
 
 Short-form content is engineered to be addictive. It hijacks your attention and leaves you doom-scrolling brain-rot
 content.
 
 LongTube is an opt-out for the times you want to focus on long-form content.
 
-## How?
+## ✨ Features
+
+- **🚫 Removes all Shorts** from YouTube's UI
+- **↪️ Redirects** away from Shorts URLs
+- **📊 Tracks** how many Shorts you've avoided
+- **🔓 Open source** forever
+
+## 📦 Installation
 
 The extension has been submitted to the Chrome Web Store and the Firefox Add-Ons registry, but for now you need to add
 it locally.
 
-### Installation
-
-#### Download Release
+### Download Release
 
 Download the latest release from [GitHub Releases](https://github.com/nickcorin/longtube/releases).
 
@@ -56,13 +61,13 @@ Download the latest release from [GitHub Releases](https://github.com/nickcorin/
 > Note: Temporary add-ons are removed on exit. This is a limitation enforced by Mozilla until the extension is signed
 > by them. I'm working on it.
 
-## Contributing
+## 🤝 Contributing
 
 I vibe-coded this for myself because I was tired of being force fed short-form content without the ability to opt-out. It happens to work really well, so I thought I'd share it with others.
 
 Feel free to use it, share it, or contribute.
 
-## License
+## 📄 License
 
 MIT.
 
