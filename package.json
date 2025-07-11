@@ -1,6 +1,6 @@
 {
   "name": "longtube",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Browser extension to remove Shorts from YouTube",
   "type": "module",
   "repository": {
@@ -34,7 +34,12 @@
     "lint:fix": "eslint src/**/*.js tests/**/*.js --fix",
     "format": "prettier --write \"**/*.{js,json,html,css,md}\"",
     "format:check": "prettier --check \"**/*.{js,json,html,css,md}\"",
-    "ci": "bun run lint && bun run format:check && bun run test"
+    "ci": "bun run lint && bun run format:check && bun run test",
+    "version:patch": "bun scripts/bump-version.js patch",
+    "version:minor": "bun scripts/bump-version.js minor",
+    "version:major": "bun scripts/bump-version.js major",
+    "version:beta": "bun scripts/bump-version.js beta",
+    "version:rc": "bun scripts/bump-version.js rc"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
