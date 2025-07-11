@@ -57,33 +57,25 @@ async function generateWebstoreScreenshots() {
       await page.setViewport({
         width: screenshot.width,
         height: screenshot.height,
-        deviceScaleFactor: 2, // For high-quality screenshots
+        deviceScaleFactor: 1, // Chrome Web Store requires exact pixel dimensions
       });
 
+      // Disable cache to ensure fresh images
+      await page.setCacheEnabled(false);
+      
       const filePath = `file://${screenshot.input}`;
       await page.goto(filePath, { waitUntil: 'networkidle0' });
 
       // Wait a bit for any animations or loading
       await new Promise((r) => setTimeout(r, 1000));
 
-      // Check if this is a promo image (no screenshot-container)
-      const hasScreenshotContainer = await page.$('.screenshot-container');
-      
-      if (hasScreenshotContainer) {
-        // For regular screenshots, capture just the container with transparency
-        await hasScreenshotContainer.screenshot({
-          path: screenshot.output,
-          type: 'png',
-          omitBackground: true,
-        });
-      } else {
-        // For promo images, capture the full viewport
-        await page.screenshot({
-          path: screenshot.output,
-          fullPage: false,
-          type: 'png',
-        });
-      }
+      // Always capture full viewport to ensure exact dimensions
+      await page.screenshot({
+        path: screenshot.output,
+        fullPage: false,
+        type: 'png',
+        omitBackground: true,
+      });
 
       console.log(`✓ ${path.basename(screenshot.output)}`);
       console.log(`  ${screenshot.description}`);
