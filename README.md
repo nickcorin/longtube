@@ -9,7 +9,7 @@
 </div>
 
 <div align="center">
-  <img src="docs/images/screenshot-popup-1280x800.png" alt="LongTube Extension Popup" width="400">
+  <img src="docs/images/screenshot-popup-1280x800.png" alt="LongTube Extension Popup">
 </div>
 
 ## What?
