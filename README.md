@@ -11,14 +11,14 @@ YouTube without Shorts.
 </div>
 
 <div align="center">
-  <img src="docs/images/screenshot-popup-1280x800.png" alt="LongTube Extension Popup">
-</div>
-
-<div align="center">
   
 [![Download for Chrome](https://img.shields.io/badge/Download%20for-Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://github.com/nickcorin/longtube/releases/latest/download/chrome.zip)
 [![Download for Firefox](https://img.shields.io/badge/Download%20for-Firefox-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://github.com/nickcorin/longtube/releases/latest/download/firefox.zip)
 
+</div>
+
+<div align="center">
+  <img src="docs/images/screenshot-popup-1280x800.png" alt="LongTube Extension Popup">
 </div>
 
 ## 🎯 What is LongTube?
