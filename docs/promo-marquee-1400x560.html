@@ -8,7 +8,7 @@
         margin: 0;
         padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         width: 1400px;
         height: 560px;
         overflow: hidden;
@@ -57,8 +57,8 @@
         height: 80px;
         border-radius: 20px;
         margin-right: 24px;
-        border: 3px solid rgba(255, 255, 255, 0.9);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
       }
 
       .title {
@@ -67,7 +67,7 @@
         margin: 0;
         line-height: 1;
         letter-spacing: -0.02em;
-        text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+        text-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
       }
 
       .tagline {
@@ -76,16 +76,18 @@
         line-height: 1.3;
         opacity: 0.95;
         font-weight: 500;
-        text-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+        text-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        color: #e2e8f0;
       }
 
       .description {
         font-size: 18px;
         margin: 0 0 32px 0;
         line-height: 1.6;
-        opacity: 0.9;
+        opacity: 0.85;
         max-width: 500px;
-        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        color: #cbd5e1;
       }
 
       .features-grid {
@@ -99,11 +101,18 @@
         display: flex;
         align-items: center;
         gap: 12px;
-        background: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.05);
         padding: 12px 20px;
         border-radius: 12px;
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: transform 0.2s ease, background-color 0.2s ease;
+      }
+
+      .feature-item:hover {
+        transform: translateX(4px);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(34, 197, 94, 0.3);
       }
 
       .feature-icon {
@@ -113,6 +122,7 @@
       .feature-text {
         font-size: 16px;
         font-weight: 600;
+        color: #f1f5f9;
       }
 
       .mockup-container {
@@ -124,7 +134,7 @@
         justify-content: center;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
         transform: translateX(5px);
       }
 
@@ -139,7 +149,7 @@
       .browser-frame {
         width: 100%;
         height: 100%;
-        background: white;
+        background: #18181b;
         border-radius: 12px;
         overflow: hidden;
         position: relative;
@@ -147,7 +157,7 @@
 
       .browser-header {
         height: 40px;
-        background: #f3f4f6;
+        background: #27272a;
         display: flex;
         align-items: center;
         padding: 0 16px;
@@ -163,35 +173,35 @@
         width: 12px;
         height: 12px;
         border-radius: 50%;
-        background: #e5e7eb;
+        background: #3f3f46;
       }
 
       .dot:nth-child(1) {
-        background: #ef4444;
+        background: #dc2626;
       }
       .dot:nth-child(2) {
         background: #f59e0b;
       }
       .dot:nth-child(3) {
-        background: #10b981;
+        background: #22c55e;
       }
 
       .browser-url {
         flex: 1;
         margin-left: 20px;
         height: 28px;
-        background: white;
+        background: #18181b;
         border-radius: 6px;
         display: flex;
         align-items: center;
         padding: 0 12px;
         font-size: 13px;
-        color: #6b7280;
+        color: #71717a;
       }
 
       .browser-content {
         height: calc(100% - 40px);
-        background: #1a1a1a;
+        background: #0f0f0f;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -211,7 +221,7 @@
       .video-thumbnail {
         width: 100%;
         height: 100%;
-        background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -233,7 +243,7 @@
         content: '';
         width: 0;
         height: 0;
-        border-left: 24px solid #1a1a1a;
+        border-left: 24px solid #0f172a;
         border-top: 14px solid transparent;
         border-bottom: 14px solid transparent;
         margin-left: 4px;
@@ -244,13 +254,13 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        background: rgba(239, 68, 68, 0.95);
+        background: #22c55e;
         color: white;
         padding: 20px 40px;
         border-radius: 12px;
         font-size: 24px;
         font-weight: 700;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        box-shadow: 0 12px 24px rgba(34, 197, 94, 0.4);
         backdrop-filter: blur(10px);
         display: flex;
         align-items: center;
@@ -264,26 +274,11 @@
         right: 0;
         bottom: 0;
         background-image:
-          radial-gradient(circle at 10% 90%, rgba(255, 255, 255, 0.1) 0%, transparent 40%),
-          radial-gradient(circle at 90% 10%, rgba(255, 255, 255, 0.1) 0%, transparent 40%);
+          radial-gradient(circle at 10% 90%, rgba(34, 197, 94, 0.1) 0%, transparent 40%),
+          radial-gradient(circle at 90% 10%, rgba(34, 197, 94, 0.1) 0%, transparent 40%);
         pointer-events: none;
       }
 
-      .open-source-badge {
-        position: absolute;
-        top: 30px;
-        right: 30px;
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        font-size: 12px;
-        font-weight: 600;
-        padding: 8px 16px;
-        border-radius: 20px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-      }
     </style>
   </head>
   <body>
@@ -323,12 +318,13 @@
       <div class="content-right">
         <div class="mockup-container">
           <img
-            src="store-screenshot.png"
+            src="images/screenshot-popup-1280x800.png"
             alt="LongTube Extension Interface"
             class="extension-screenshot"
           />
         </div>
       </div>
+      
     </div>
   </body>
 </html>
