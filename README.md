@@ -43,7 +43,7 @@ LongTube is an opt-out for the times you want to focus on long-form content.
 
 For Chromium browsers (Chrome, Edge, Brave), install directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf).
 
-### Firefox
+### Gecko Browsers (Firefox/Zen)
 
 The extension is pending approval on the Firefox Add-ons store. For now, follow the manual installation instructions below.
 
