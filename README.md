@@ -39,9 +39,9 @@ LongTube is an opt-out for the times you want to focus on long-form content.
 
 ## 📦 Installation
 
-### Chrome Web Store
+### Chromium Browsers (Chrome/Edge/Brave)
 
-For Chromium browsers (Chrome, Edge, Brave), install directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf).
+Install directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf).
 
 ### Gecko Browsers (Firefox/Zen)
 
