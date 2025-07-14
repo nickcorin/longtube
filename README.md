@@ -12,7 +12,7 @@ YouTube without Shorts.
 
 <div align="center">
   
-[![Download for Chrome](https://img.shields.io/badge/Download%20for-Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://github.com/nickcorin/longtube/releases/latest/download/chrome.zip)
+[![Download from Chrome Web Store](https://img.shields.io/badge/Download%20from-Chrome%20Web%20Store-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf)
 [![Download for Firefox](https://img.shields.io/badge/Download%20for-Firefox-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://github.com/nickcorin/longtube/releases/latest/download/firefox.zip)
 
 </div>
@@ -39,10 +39,15 @@ LongTube is an opt-out for the times you want to focus on long-form content.
 
 ## 📦 Installation
 
-The extension has been submitted to the Chrome Web Store and the Firefox Add-Ons registry, but for now you can add
-it locally.
+### Chrome Web Store
 
-### Download Release
+For Chromium browsers (Chrome, Edge, Brave), install directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf).
+
+### Firefox
+
+The extension is pending approval on the Firefox Add-ons store. For now, follow the manual installation instructions below.
+
+### Manual Installation
 
 Download the latest release from [GitHub Releases](https://github.com/nickcorin/longtube/releases).
 
