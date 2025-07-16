@@ -60,12 +60,9 @@ Download the latest release from [GitHub Releases](https://github.com/nickcorin/
 
 **Gecko Browsers (Firefox/Zen):**
 
-1. Navigate to `about:debugging#/runtime/this-firefox`.
-2. Click "Load Temporary Add-on".
-3. Select the `firefox.zip` file.
-
-> [!NOTE]
-> Firefox temporary add-ons are removed when the browser closes. This is a Mozilla limitation for unsigned extensions.
+1. Navigate to `about:addons`.
+2. Click the gear icon and select "Install Add-on From File".
+3. Select the `firefox.xpi` file.
 
 ## 🤝 Contributing
 

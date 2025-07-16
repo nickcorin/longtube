@@ -46,7 +46,7 @@ jobs:
           cd ../signed
           SIGNED_XPI=$(ls *.xpi | head -n 1)
           if [ -n "$SIGNED_XPI" ]; then
-            mv "$SIGNED_XPI" ../firefox-signed.xpi
+            mv "$SIGNED_XPI" ../firefox.xpi
             echo "✅ Firefox extension signed successfully"
           else
             echo "❌ Failed to sign Firefox extension"
@@ -69,8 +69,7 @@ jobs:
         with:
           files: |
             dist/chrome.zip
-            dist/firefox.zip
-            dist/firefox-signed.xpi
+            dist/firefox.xpi
           generate_release_notes: true
           prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
         env:
