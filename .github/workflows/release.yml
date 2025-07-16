@@ -24,6 +24,35 @@ jobs:
       - name: Build extension
         run: bun run build
       
+      - name: Sign Firefox extension
+        run: |
+          # Install web-ext
+          npm install -g web-ext
+          
+          # Create a temporary directory for the signed extension
+          mkdir -p dist/signed
+          
+          # Sign the Firefox extension
+          cd dist/firefox
+          web-ext sign \
+            --channel=unlisted \
+            --api-key=${{ secrets.AMO_JWT_ISSUER }} \
+            --api-secret=${{ secrets.AMO_JWT_SECRET }} \
+            --artifacts-dir=../signed \
+            --no-input
+          
+          # The signed XPI will have a different name, so we need to rename it
+          # Find the signed XPI and rename it
+          cd ../signed
+          SIGNED_XPI=$(ls *.xpi | head -n 1)
+          if [ -n "$SIGNED_XPI" ]; then
+            mv "$SIGNED_XPI" ../firefox-signed.xpi
+            echo "✅ Firefox extension signed successfully"
+          else
+            echo "❌ Failed to sign Firefox extension"
+            exit 1
+          fi
+      
       - name: Install Chrome
         uses: browser-actions/setup-chrome@v1
       
@@ -41,6 +70,7 @@ jobs:
           files: |
             dist/chrome.zip
             dist/firefox.zip
+            dist/firefox-signed.xpi
           generate_release_notes: true
           prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
         env:
