@@ -29,11 +29,15 @@ jobs:
           # Install web-ext
           npm install -g web-ext
           
-          # Create a temporary directory for the signed extension
-          mkdir -p dist/signed
+          # Create a temporary directory for signing
+          mkdir -p dist/firefox-unpacked dist/signed
+          
+          # Unpack the Firefox extension
+          cd dist
+          unzip firefox.zip -d firefox-unpacked
           
           # Sign the Firefox extension
-          cd dist/firefox
+          cd firefox-unpacked
           web-ext sign \
             --channel=unlisted \
             --api-key=${{ secrets.AMO_JWT_ISSUER }} \
