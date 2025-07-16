@@ -5,16 +5,15 @@
 
 YouTube without Shorts.
 
-![Extension Version](https://img.shields.io/badge/version-0.1.0--beta.1-blue.svg)
+![Extension Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-[![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Available-4285F4.svg)](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf)
 
 </div>
 
 <div align="center">
   
-[![Download for Chrome](https://img.shields.io/badge/Download%20for-Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf)
-[![Download for Firefox](https://img.shields.io/badge/Download%20for-Firefox-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/longtube)
+[![Install on Chrome](https://img.shields.io/badge/Install%20on-Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf)
+[![Install on Firefox](https://img.shields.io/badge/Install%20on-Firefox-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/longtube)
 
 </div>
 
