@@ -36,8 +36,18 @@ jobs:
           cd dist
           unzip firefox.zip -d firefox-unpacked
           
-          # Sign the Firefox extension
+          # Get the short commit hash for version suffix
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          
+          # Update the manifest version to include commit hash
           cd firefox-unpacked
+          # Read current version and append commit hash
+          CURRENT_VERSION=$(jq -r '.version' manifest.json)
+          NEW_VERSION="${CURRENT_VERSION}.${COMMIT_HASH}"
+          jq --arg version "$NEW_VERSION" '.version = $version' manifest.json > manifest.tmp && mv manifest.tmp manifest.json
+          echo "📦 Signing Firefox extension with version: $NEW_VERSION"
+          
+          # Sign the Firefox extension
           web-ext sign \
             --channel=unlisted \
             --api-key=${{ secrets.AMO_JWT_ISSUER }} \
