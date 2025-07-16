@@ -14,7 +14,7 @@ YouTube without Shorts.
 <div align="center">
   
 [![Download for Chrome](https://img.shields.io/badge/Download%20for-Chrome-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf)
-[![Download for Firefox](https://img.shields.io/badge/Download%20for-Firefox-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://github.com/nickcorin/longtube/releases/latest/download/firefox.zip)
+[![Download for Firefox](https://img.shields.io/badge/Download%20for-Firefox-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/longtube)
 
 </div>
 
