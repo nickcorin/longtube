@@ -46,7 +46,7 @@ Install directly from the [Chrome Web Store](https://chromewebstore.google.com/d
 
 ### Gecko Browsers (Firefox/Zen)
 
-The extension is pending approval on the Firefox Add-ons store. For now, follow the manual installation instructions below.
+Install directly from [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/longtube).
 
 ### Manual Installation
 
