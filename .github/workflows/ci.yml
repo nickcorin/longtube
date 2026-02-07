@@ -43,7 +43,7 @@ jobs:
         run: bun test tests/unit/
       
       - name: Run structure tests
-        run: bun test tests/e2e/extension-basic.test.js
+        run: bun test ./tests/e2e/build-verification.test.js
 
   test-e2e:
     name: E2E Tests
