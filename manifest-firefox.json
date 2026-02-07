@@ -17,7 +17,7 @@
     "128": "assets/icon128.png"
   },
 
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage"],
 
   "host_permissions": ["*://*.youtube.com/*"],
 
