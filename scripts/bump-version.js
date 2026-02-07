@@ -1,73 +1,56 @@
 #!/usr/bin/env bun
-import { readFileSync, writeFileSync } from 'fs';
-import { execSync } from 'child_process';
+
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 
 const bumpType = process.argv[2];
+const allowed = new Set(['major', 'minor', 'patch', 'beta', 'rc']);
 
-if (!['major', 'minor', 'patch', 'beta', 'rc'].includes(bumpType)) {
-  console.error('Usage: bun run bump-version.js [major|minor|patch|beta|rc]');
+if (!allowed.has(bumpType)) {
+  console.error('Usage: bun scripts/bump-version.js [major|minor|patch|beta|rc]');
   process.exit(1);
 }
 
-// Read current version from manifest.json
-const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
+const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
+const writeJson = (path, data) => writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
+
+const manifest = readJson('manifest.json');
 const currentVersion = manifest.version;
-
-// Parse version
 const [major, minor, patch] = currentVersion.split('.').map(Number);
-let newVersion;
 
-switch (bumpType) {
-  case 'major':
-    newVersion = `${major + 1}.0.0`;
-    break;
-  case 'minor':
-    newVersion = `${major}.${minor + 1}.0`;
-    break;
-  case 'patch':
-    newVersion = `${major}.${minor}.${patch + 1}`;
-    break;
-  case 'beta':
-    // Check if already in beta
-    if (currentVersion.includes('-beta')) {
-      const betaNum = parseInt(currentVersion.split('-beta.')[1]) + 1;
-      newVersion = `${major}.${minor}.${patch}-beta.${betaNum}`;
-    } else {
-      newVersion = `${major}.${minor}.${patch + 1}-beta.1`;
-    }
-    break;
-  case 'rc':
-    // Check if already in rc
-    if (currentVersion.includes('-rc')) {
-      const rcNum = parseInt(currentVersion.split('-rc.')[1]) + 1;
-      newVersion = `${major}.${minor}.${patch}-rc.${rcNum}`;
-    } else {
-      newVersion = `${major}.${minor}.${patch + 1}-rc.1`;
-    }
-    break;
+const getPrereleaseVersion = (label) => {
+  const tag = `-${label}.`;
+  if (currentVersion.includes(tag)) {
+    const currentNumber = Number.parseInt(currentVersion.split(tag)[1], 10) || 0;
+    return `${major}.${minor}.${patch}-${label}.${currentNumber + 1}`;
+  }
+  return `${major}.${minor}.${patch + 1}-${label}.1`;
+};
+
+const nextVersion = (() => {
+  if (bumpType === 'major') return `${major + 1}.0.0`;
+  if (bumpType === 'minor') return `${major}.${minor + 1}.0`;
+  if (bumpType === 'patch') return `${major}.${minor}.${patch + 1}`;
+  if (bumpType === 'beta') return getPrereleaseVersion('beta');
+  return getPrereleaseVersion('rc');
+})();
+
+const manifestVersion = nextVersion.split('-')[0];
+
+manifest.version = manifestVersion;
+writeJson('manifest.json', manifest);
+
+const packageJson = readJson('package.json');
+packageJson.version = nextVersion;
+writeJson('package.json', packageJson);
+
+if (existsSync('manifest-firefox.json')) {
+  try {
+    const firefoxManifest = readJson('manifest-firefox.json');
+    firefoxManifest.version = manifestVersion;
+    writeJson('manifest-firefox.json', firefoxManifest);
+  } catch {
+    // Ignore malformed or missing firefox manifest.
+  }
 }
 
-// Update manifest.json
-manifest.version = newVersion.split('-')[0]; // Chrome doesn't support pre-release suffixes
-writeFileSync('manifest.json', JSON.stringify(manifest, null, 2) + '\n');
-
-// Update package.json
-const packageJson = JSON.parse(readFileSync('package.json', 'utf8'));
-packageJson.version = newVersion;
-writeFileSync('package.json', JSON.stringify(packageJson, null, 2) + '\n');
-
-// Update Firefox manifest if it exists
-try {
-  const firefoxManifest = JSON.parse(readFileSync('manifest-firefox.json', 'utf8'));
-  firefoxManifest.version = newVersion.split('-')[0];
-  writeFileSync('manifest-firefox.json', JSON.stringify(firefoxManifest, null, 2) + '\n');
-} catch (e) {
-  // Firefox manifest might not exist
-}
-
-console.log(`✨ Version bumped: ${currentVersion} → ${newVersion}`);
-console.log('\nNext steps:');
-console.log(`1. Review changes: git diff`);
-console.log(`2. Commit: git add -A && git commit -m "chore: bump version to ${newVersion}"`);
-console.log(`3. Tag: git tag -a v${newVersion} -m "Release v${newVersion}"`);
-console.log(`4. Push: git push && git push origin v${newVersion}`);
+console.log(`Version bumped: ${currentVersion} -> ${nextVersion}`);
