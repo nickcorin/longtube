@@ -1,26 +1,21 @@
 {
   "manifest_version": 3,
   "name": "LongTube",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Remove YouTube Shorts to focus on long-form content",
-
   "browser_specific_settings": {
     "gecko": {
       "id": "longtube@example.com",
       "strict_min_version": "109.0"
     }
   },
-
   "icons": {
     "16": "assets/icon16.png",
     "48": "assets/icon48.png",
     "128": "assets/icon128.png"
   },
-
   "permissions": ["storage"],
-
   "host_permissions": ["*://*.youtube.com/*"],
-
   "action": {
     "default_popup": "src/popup.html",
     "default_icon": {
@@ -29,7 +24,6 @@
       "128": "assets/icon128.png"
     }
   },
-
   "content_scripts": [
     {
       "matches": ["*://*.youtube.com/*"],
