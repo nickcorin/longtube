@@ -1,12 +1,16 @@
 import { test, expect, describe, beforeAll, afterAll } from 'bun:test';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import {
   launchChromeWithExtension,
   createPage,
   closePage,
   closeBrowser,
+  getExtensionId,
   waitForExtension,
   waitForExtensionReady,
   verifyExtensionLoaded,
+  getExtensionPath,
 } from './test-helpers.js';
 
 /**
@@ -14,17 +18,19 @@ import {
  * These tests verify extension loading, UI functionality, and content blocking.
  */
 
+let browser;
+let extensionId;
+
+beforeAll(async () => {
+  browser = await launchChromeWithExtension();
+  extensionId = await getExtensionId(browser, 1);
+}, 30000);
+
+afterAll(async () => {
+  await closeBrowser(browser);
+});
+
 describe('Chrome Extension Core Functionality', () => {
-  let browser;
-
-  beforeAll(async () => {
-    browser = await launchChromeWithExtension();
-  }, 30000);
-
-  afterAll(async () => {
-    await closeBrowser(browser);
-  });
-
   test('should load extension and inject blocking CSS', async () => {
     const page = await createPage(browser);
 
@@ -102,16 +108,6 @@ describe('Chrome Extension Core Functionality', () => {
 });
 
 describe('Shorts Blocking Functionality', () => {
-  let browser;
-
-  beforeAll(async () => {
-    browser = await launchChromeWithExtension();
-  }, 30000);
-
-  afterAll(async () => {
-    await closeBrowser(browser);
-  });
-
   test('should hide Shorts shelves on homepage', async () => {
     const page = await createPage(browser);
 
@@ -121,7 +117,6 @@ describe('Shorts Blocking Functionality', () => {
 
       // Wait for YouTube to load
       await page.waitForSelector('ytd-app', { timeout: 10000 });
-      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       // Check Shorts visibility
       const shortsInfo = await page.evaluate(() => {
@@ -153,8 +148,6 @@ describe('Shorts Blocking Functionality', () => {
         return results;
       });
 
-      console.log('Shorts visibility info:', shortsInfo);
-
       // Verify Shorts are hidden
       Object.values(shortsInfo).forEach((info) => {
         if (info.count > 0) {
@@ -175,8 +168,15 @@ describe('Shorts Blocking Functionality', () => {
         waitUntil: 'domcontentloaded',
       });
 
-      // Wait for potential redirect
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      // Wait for redirect away from Shorts path.
+      await page.waitForFunction(
+        () =>
+          !window.location.pathname.includes('/shorts/') &&
+          window.location.pathname.includes('/watch'),
+        {
+          timeout: 5000,
+        }
+      );
 
       // Check if we were redirected
       const currentUrl = page.url();
@@ -241,29 +241,17 @@ describe('Shorts Blocking Functionality', () => {
 });
 
 describe('Extension Popup Functionality', () => {
-  let browser;
-  let extensionId;
-
-  beforeAll(async () => {
-    browser = await launchChromeWithExtension();
-    const { getExtensionId } = await import('./test-helpers.js');
-    extensionId = await getExtensionId(browser);
-
-    if (extensionId) {
-      console.log('Extension ID:', extensionId);
-    }
-  }, 30000);
-
-  afterAll(async () => {
-    await closeBrowser(browser);
-  });
-
   test('should open popup and display UI elements', async () => {
     if (!extensionId) {
-      console.log('Extension ID not found, skipping popup test');
-      console.log('This is expected for Manifest V3 extensions');
-      // Mark test as passed since this is expected behavior
-      expect(true).toBe(true);
+      const popupPath = join(getExtensionPath(), 'src/popup.html');
+      const popupHtml = await readFile(popupPath, 'utf8');
+
+      expect(popupHtml).toContain('id="toggle"');
+      expect(popupHtml).toContain('id="totalBlocked"');
+      expect(popupHtml).toContain('id="sessionBlocked"');
+      expect(popupHtml).toContain('id="timeSaved"');
+      expect(popupHtml).toContain('id="resetCount"');
+      expect(popupHtml).toContain('id="themeToggle"');
       return;
     }
 
@@ -273,7 +261,7 @@ describe('Extension Popup Functionality', () => {
       // Open extension popup
       const popupUrl = `chrome-extension://${extensionId}/src/popup.html`;
       await page.goto(popupUrl);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await page.waitForSelector('#toggle', { timeout: 5000 });
 
       // Check popup elements
       const popupElements = await page.evaluate(() => {

@@ -1,224 +1,202 @@
 import { test, expect, describe, beforeEach } from 'bun:test';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { Window } from 'happy-dom';
 
-/**
- * Unit tests for the LongTube content script functionality.
- * These tests verify the core behaviors of the content script without loading the actual script,
- * using mock implementations to test individual functions and behaviors in isolation.
- */
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const contentScript = readFileSync(join(__dirname, '../../src/content.js'), 'utf8');
+
+const waitForAsyncWork = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 25));
+};
 
 describe('LongTube Content Script', () => {
-  let mockStorage = {};
+  let messageListener;
+  let storageChangeListener;
+  let reloadCalled;
+  let storageData;
 
   beforeEach(() => {
-    // Reset the DOM to a clean state for each test.
-    document.body.innerHTML = '';
-    document.head.innerHTML = '';
+    const testWindow = new Window();
+    global.window = testWindow;
+    global.document = testWindow.document;
+    global.HTMLElement = testWindow.HTMLElement;
+    global.MutationObserver = testWindow.MutationObserver;
+    global.location = testWindow.location;
+
+    document.documentElement.innerHTML = '<head></head><body></body>';
     document.documentElement.className = '';
 
-    // Reset mock storage to empty state.
-    mockStorage = {};
+    messageListener = null;
+    storageChangeListener = null;
+    reloadCalled = false;
+    storageData = {
+      enabled: true,
+      totalBlockedCount: 0,
+    };
 
-    // Set up Chrome extension API mocks.
+    delete window.browserCompat;
+
     global.chrome = {
       storage: {
         local: {
-          get: (keys, cb) => cb(mockStorage),
-          set: (items, cb) => {
-            Object.assign(mockStorage, items);
-            cb && cb();
+          data: storageData,
+          get: (keys, callback) => {
+            const result = {};
+            const keyArray = Array.isArray(keys) ? keys : [keys];
+
+            keyArray.forEach((key) => {
+              if (storageData[key] !== undefined) {
+                result[key] = storageData[key];
+              }
+            });
+
+            if (callback) {
+              callback(result);
+              return undefined;
+            }
+
+            return Promise.resolve(result);
           },
+          set: (items, callback) => {
+            const previous = { ...storageData };
+            Object.assign(storageData, items);
+
+            if (storageChangeListener) {
+              const changes = {};
+              Object.keys(items).forEach((key) => {
+                changes[key] = {
+                  oldValue: previous[key],
+                  newValue: storageData[key],
+                };
+              });
+              setTimeout(() => storageChangeListener(changes, 'local'), 0);
+            }
+
+            if (callback) {
+              callback();
+              return undefined;
+            }
+
+            return Promise.resolve();
+          },
+        },
+        onChanged: {
+          addListener: (listener) => {
+            storageChangeListener = listener;
+          },
+          removeListener: () => {},
         },
       },
       runtime: {
         onMessage: {
-          addListener: () => {},
+          addListener: (listener) => {
+            messageListener = listener;
+          },
+          removeListener: () => {},
         },
+        lastError: null,
       },
     };
 
-    // Reset window.location to a default YouTube URL.
-    // In some environments, window.location is not configurable
-    const descriptor = Object.getOwnPropertyDescriptor(window, 'location');
-    if (!descriptor || descriptor.configurable) {
-      Object.defineProperty(window, 'location', {
-        value: {
-          pathname: '/',
-          href: 'https://www.youtube.com/',
+    try {
+      window.location.href = 'https://www.youtube.com/';
+    } catch {
+      // Ignore URL assignment failures in non-navigation test environments.
+    }
+
+    try {
+      window.location.reload = () => {
+        reloadCalled = true;
+      };
+    } catch {
+      Object.defineProperty(window.location, 'reload', {
+        value: () => {
+          reloadCalled = true;
         },
-        writable: true,
         configurable: true,
       });
     }
   });
 
-  describe('CSS Injection', () => {
-    test('should inject blocking CSS styles', () => {
-      // Mock implementation of the CSS injection function.
-      const injectBlockingCSS = () => {
-        const styleId = 'longtube-blocking-styles';
-        if (document.getElementById(styleId)) return;
+  test('injects blocking CSS and removes Shorts content from DOM', async () => {
+    document.body.innerHTML = `
+      <ytd-video-renderer id="shorts-video">
+        <a href="/shorts/123">Shorts Video</a>
+      </ytd-video-renderer>
+      <ytd-video-renderer id="regular-video">
+        <a href="/watch?v=456">Regular Video</a>
+      </ytd-video-renderer>
+      <ytd-rich-shelf-renderer is-shorts id="shorts-shelf">Shorts Shelf</ytd-rich-shelf-renderer>
+    `;
 
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = '.longtube-active [href*="/shorts/"] { display: none !important; }';
-        document.head.appendChild(style);
-      };
+    eval(contentScript);
+    await waitForAsyncWork();
 
-      // Execute the CSS injection.
-      injectBlockingCSS();
+    const style = document.getElementById('longtube-blocking-styles');
+    expect(style).toBeTruthy();
+    expect(style.textContent).toContain('[href*="/shorts/"]');
+    expect(document.documentElement.classList.contains('longtube-active')).toBe(true);
 
-      // Verify that the style element was created with correct properties.
-      const style = document.getElementById('longtube-blocking-styles');
-      expect(style).toBeTruthy();
-      expect(style.textContent).toContain('display: none');
-    });
+    expect(document.getElementById('shorts-video')).toBeNull();
+    expect(document.getElementById('shorts-shelf')).toBeNull();
+    expect(document.getElementById('regular-video')).toBeTruthy();
+    expect(storageData.totalBlockedCount).toBeGreaterThan(0);
   });
 
-  describe('Element Removal', () => {
-    test('should remove Shorts elements when enabled', () => {
-      // Set up a DOM structure with both Shorts and regular videos.
-      document.body.innerHTML = `
-        <ytd-video-renderer>
-          <a href="/shorts/123">Shorts Video</a>
-        </ytd-video-renderer>
-        <ytd-video-renderer>
-          <a href="/watch?v=456">Regular Video</a>
-        </ytd-video-renderer>
-      `;
+  test('registers runtime message listener and handles getStatus', async () => {
+    eval(contentScript);
+    await waitForAsyncWork();
 
-      // Mock implementation of the Shorts removal function.
-      const removeShortsFromDOM = () => {
-        document.querySelectorAll('[href*="/shorts/"]').forEach((link) => {
-          const container = link.closest('ytd-video-renderer');
-          if (container) container.remove();
-        });
-      };
+    expect(typeof messageListener).toBe('function');
 
-      removeShortsFromDOM();
-
-      // Verify that only Shorts videos were removed, regular videos remain.
-      const videos = document.querySelectorAll('ytd-video-renderer');
-      expect(videos.length).toBe(1);
-      expect(videos[0].textContent).toContain('Regular Video');
+    let response = null;
+    messageListener({ action: 'getStatus' }, null, (payload) => {
+      response = payload;
     });
+
+    expect(response).toBeTruthy();
+    expect(response.isEnabled).toBe(true);
+    expect(typeof response.pageBlockedCount).toBe('number');
   });
 
-  describe('Redirect Logic', () => {
-    test('should redirect from Shorts URLs with probability', () => {
-      // Test the redirect logic without actually modifying window.location
-      // This tests the core logic in a way that works in all environments
+  test('handles toggleBlocking message and persists enabled state', async () => {
+    eval(contentScript);
+    await waitForAsyncWork();
 
-      // Create a mock location object for testing
-      const mockLocation = {
-        pathname: '/shorts/abc123',
-        href: 'https://www.youtube.com/shorts/abc123',
-      };
+    messageListener({ action: 'toggleBlocking', enabled: false }, null, () => {});
+    await waitForAsyncWork();
 
-      // Track what URL would be assigned
-      let assignedUrl = null;
-
-      // Mock implementation that tests the logic
-      const getRandomRedirectUrl = () => {
-        const randomNum = Math.floor(Math.random() * 69);
-        return randomNum === 0
-          ? 'https://www.youtube.com/watch?v=9Deg7VrpHbM'
-          : 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-      };
-
-      const checkAndRedirect = (isEnabled, location) => {
-        if (isEnabled && location.pathname.includes('/shorts')) {
-          assignedUrl = getRandomRedirectUrl();
-          return true; // Would redirect
-        }
-        return false; // Would not redirect
-      };
-
-      // Test that it detects Shorts URLs and would redirect
-      const wouldRedirect = checkAndRedirect(true, mockLocation);
-      expect(wouldRedirect).toBe(true);
-
-      // Verify a redirect URL was chosen
-      const validUrls = [
-        'https://www.youtube.com/watch?v=9Deg7VrpHbM',
-        'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-      ];
-      expect(validUrls).toContain(assignedUrl);
-
-      // Test that it doesn't redirect when disabled
-      assignedUrl = null;
-      const wouldRedirectDisabled = checkAndRedirect(false, mockLocation);
-      expect(wouldRedirectDisabled).toBe(false);
-      expect(assignedUrl).toBe(null);
-
-      // Test that it doesn't redirect for non-Shorts URLs
-      assignedUrl = null;
-      const normalLocation = { pathname: '/watch', href: 'https://www.youtube.com/watch?v=123' };
-      const wouldRedirectNormal = checkAndRedirect(true, normalLocation);
-      expect(wouldRedirectNormal).toBe(false);
-      expect(assignedUrl).toBe(null);
-    });
-
-    test('should mostly redirect to Rick Roll', () => {
-      // Test the probability distribution of redirect URLs.
-      let rickRollCount = 0;
-      let otherVideoCount = 0;
-
-      // Run multiple iterations to verify the 68/69 probability distribution.
-      for (let i = 0; i < 690; i++) {
-        const randomNum = Math.floor(Math.random() * 69);
-        if (randomNum === 0) {
-          otherVideoCount++;
-        } else {
-          rickRollCount++;
-        }
-      }
-
-      // Verify the distribution matches expected probabilities.
-      // Should be approximately 680 Rick Rolls and 10 alternate videos.
-      expect(rickRollCount).toBeGreaterThan(600);
-      expect(otherVideoCount).toBeLessThan(90);
-    });
+    expect(storageData.enabled).toBe(false);
+    expect(reloadCalled).toBe(true);
   });
 
-  describe('Toggle State', () => {
-    test('should apply active class when enabled', () => {
-      // Mock implementation of the blocking state toggle.
-      const updateBlockingState = (enabled) => {
-        if (enabled) {
-          document.documentElement.classList.add('longtube-active');
-        } else {
-          document.documentElement.classList.remove('longtube-active');
-        }
-      };
+  test('reloads page when enabled changes via storage event', async () => {
+    eval(contentScript);
+    await waitForAsyncWork();
 
-      // Test enabling the blocking state.
-      updateBlockingState(true);
+    expect(typeof storageChangeListener).toBe('function');
+    storageChangeListener({ enabled: { oldValue: true, newValue: false } }, 'local');
+    await waitForAsyncWork();
 
-      // Verify the active class is added.
-      expect(document.documentElement.classList.contains('longtube-active')).toBe(true);
-
-      // Test disabling the blocking state.
-      updateBlockingState(false);
-
-      // Verify the active class is removed.
-      expect(document.documentElement.classList.contains('longtube-active')).toBe(false);
-    });
+    expect(reloadCalled).toBe(true);
   });
 
-  describe('Counter Logic', () => {
-    test('should track removed elements count', () => {
-      // Mock implementation of the blocked count tracking.
-      let totalCount = 0;
-      const updateBlockedCount = (count) => {
-        totalCount += count;
-      };
+  test('redirects away from Shorts pages when enabled', async () => {
+    const originalMathRandom = Math.random;
 
-      // Simulate removing elements in multiple batches.
-      updateBlockedCount(3);
-      updateBlockedCount(2);
+    try {
+      Math.random = () => 0.5;
+      window.location.href = 'https://www.youtube.com/shorts/abc123';
 
-      // Verify counts are accumulated correctly.
-      expect(totalCount).toBe(5);
-    });
+      eval(contentScript);
+      await waitForAsyncWork();
+
+      expect(window.location.pathname).toBe('/watch');
+      expect(window.location.href).toContain('watch?v=');
+    } finally {
+      Math.random = originalMathRandom;
+    }
   });
 });

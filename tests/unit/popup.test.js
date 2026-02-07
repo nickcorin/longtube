@@ -1,86 +1,163 @@
 import { test, expect, describe, beforeEach } from 'bun:test';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { Window } from 'happy-dom';
 
-/**
- * Unit tests for the LongTube extension popup functionality.
- * These tests verify the popup's UI behavior, state management,
- * and interaction with the Chrome extension APIs.
- */
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const popupScript = readFileSync(join(__dirname, '../../src/popup.js'), 'utf8');
+
+const renderPopupDOM = () => {
+  document.body.innerHTML = `
+    <button id="themeToggle"></button>
+    <button id="toggle" class="switch active" role="switch" aria-checked="true"></button>
+    <div id="totalBlocked">0</div>
+    <div id="sessionBlocked">0</div>
+    <div id="timeSaved">0 seconds</div>
+    <button id="resetCount"></button>
+  `;
+};
+
+const waitForAsyncWork = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 25));
+};
+
+const createBrowserCompatMock = (initialStorage = {}, tabs = [{ id: 1 }]) => {
+  const storageData = { ...initialStorage };
+  const storageListeners = [];
+  const sentMessages = [];
+
+  const storage = {
+    local: {
+      get: async (keys) => {
+        if (!keys) return { ...storageData };
+
+        const result = {};
+        const requestedKeys = Array.isArray(keys) ? keys : [keys];
+
+        requestedKeys.forEach((key) => {
+          if (Object.prototype.hasOwnProperty.call(storageData, key)) {
+            result[key] = storageData[key];
+          }
+        });
+
+        return result;
+      },
+      set: async (items) => {
+        const previous = { ...storageData };
+        Object.assign(storageData, items);
+
+        const changes = {};
+        Object.keys(items).forEach((key) => {
+          changes[key] = {
+            oldValue: previous[key],
+            newValue: storageData[key],
+          };
+        });
+
+        storageListeners.forEach((listener) => listener(changes, 'local'));
+      },
+    },
+    onChanged: {
+      addListener: (listener) => storageListeners.push(listener),
+    },
+  };
+
+  const browserCompat = {
+    storage,
+    tabs: {
+      query: async () => tabs,
+      sendMessage: async (tabId, message) => {
+        sentMessages.push({ tabId, message });
+      },
+    },
+  };
+
+  return { browserCompat, storageData, sentMessages };
+};
 
 describe('LongTube Popup', () => {
   beforeEach(() => {
-    // Reset the DOM to a clean state before each test.
-    document.body.innerHTML = '';
+    const testWindow = new Window();
+    global.window = testWindow;
+    global.document = testWindow.document;
+    global.HTMLElement = testWindow.HTMLElement;
+    global.MutationObserver = testWindow.MutationObserver;
+    global.location = testWindow.location;
 
-    // Mock Chrome extension APIs for testing without a real browser environment.
-    global.chrome = {
-      storage: {
-        local: {
-          get: (keys, cb) => cb({}),
-          set: (items, cb) => cb && cb(),
-        },
+    document.documentElement.innerHTML = '<head></head><body></body>';
+    document.documentElement.removeAttribute('data-theme');
+    renderPopupDOM();
+  });
+
+  test('initializes UI from storage data', async () => {
+    const { browserCompat } = createBrowserCompatMock({
+      enabled: false,
+      totalBlockedCount: 10,
+      sessionStartCount: 4,
+      theme: 'dark',
+    });
+
+    window.browserCompat = browserCompat;
+    eval(popupScript);
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await waitForAsyncWork();
+
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(document.getElementById('toggle').classList.contains('active')).toBe(false);
+    expect(document.getElementById('toggle').getAttribute('aria-checked')).toBe('false');
+    expect(document.getElementById('totalBlocked').textContent).toBe('10');
+    expect(document.getElementById('sessionBlocked').textContent).toBe('6');
+    expect(document.getElementById('timeSaved').textContent).toBe('3 minutes');
+  });
+
+  test('toggles blocking state and sends tab messages', async () => {
+    const tabs = [{ id: 10 }, { id: 20 }];
+    const { browserCompat, storageData, sentMessages } = createBrowserCompatMock(
+      {
+        enabled: true,
+        totalBlockedCount: 0,
+        sessionStartCount: 0,
       },
-      tabs: {
-        query: (query, cb) => cb([{ id: 1, url: 'https://www.youtube.com' }]),
-        sendMessage: () => {},
-        reload: (tabId, cb) => cb && cb(),
-      },
-    };
+      tabs
+    );
+
+    window.browserCompat = browserCompat;
+    eval(popupScript);
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await waitForAsyncWork();
+
+    document.getElementById('toggle').click();
+    await waitForAsyncWork();
+
+    expect(storageData.enabled).toBe(false);
+    expect(sentMessages.length).toBe(2);
+    expect(sentMessages[0].message).toEqual({
+      action: 'toggleBlocking',
+      enabled: false,
+    });
   });
 
-  test('should toggle between active and inactive states', () => {
-    // Set up toggle UI elements that simulate the popup's toggle switch.
-    const toggle = document.createElement('div');
-    toggle.id = 'toggle';
-    toggle.className = 'toggle-switch';
+  test('resets stored stats and updates UI', async () => {
+    const { browserCompat, storageData } = createBrowserCompatMock({
+      enabled: true,
+      totalBlockedCount: 12,
+      sessionStartCount: 5,
+      theme: 'light',
+    });
 
-    // Simulate clicking the toggle to activate blocking.
-    toggle.classList.toggle('active');
+    window.browserCompat = browserCompat;
+    eval(popupScript);
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await waitForAsyncWork();
 
-    // Verify the toggle shows the active state.
-    expect(toggle.classList.contains('active')).toBe(true);
+    document.getElementById('resetCount').click();
+    await waitForAsyncWork();
 
-    // Simulate clicking the toggle again to deactivate blocking.
-    toggle.classList.toggle('active');
-
-    // Verify the toggle returns to the inactive state.
-    expect(toggle.classList.contains('active')).toBe(false);
-  });
-
-  test('should update UI based on enabled state', () => {
-    // Define a function that updates the UI based on the extension's state.
-    const updateUI = (enabled, totalCount) => {
-      const status = document.getElementById('status');
-      const total = document.getElementById('totalBlocked');
-
-      if (status) status.textContent = enabled ? 'Active' : 'Inactive';
-      if (total) total.textContent = totalCount || 0;
-    };
-
-    // Create the DOM structure that the popup uses.
-    document.body.innerHTML = `
-      <div id="status"></div>
-      <div id="totalBlocked"></div>
-    `;
-
-    // Update the UI to show the extension is enabled with 42 blocked items.
-    updateUI(true, 42);
-
-    // Verify the status displays as active and shows the correct count.
-    expect(document.getElementById('status').textContent).toBe('Active');
-    expect(document.getElementById('totalBlocked').textContent).toBe('42');
-  });
-
-  test('should handle reset button click', () => {
-    // Create a flag to track if the reset handler was called.
-    let resetCalled = false;
-    const handleReset = () => {
-      resetCalled = true;
-    };
-
-    // Simulate clicking the reset button.
-    handleReset();
-
-    // Verify the reset handler was executed.
-    expect(resetCalled).toBe(true);
+    expect(storageData.totalBlockedCount).toBe(0);
+    expect(storageData.sessionStartCount).toBe(0);
+    expect(document.getElementById('totalBlocked').textContent).toBe('0');
+    expect(document.getElementById('sessionBlocked').textContent).toBe('0');
+    expect(document.getElementById('timeSaved').textContent).toBe('0 seconds');
   });
 });

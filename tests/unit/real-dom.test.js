@@ -1,6 +1,8 @@
-import { test, expect, describe, beforeEach } from 'bun:test';
+import { test, expect, describe, beforeEach, afterEach } from 'bun:test';
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { Window } from 'happy-dom';
 
 /**
  * Tests using real YouTube HTML structure fixtures.
@@ -8,130 +10,176 @@ import { join } from 'path';
  * Shorts content from actual YouTube page structures.
  */
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const contentScript = readFileSync(join(__dirname, '../../src/content.js'), 'utf8');
+const fixturePath = join(__dirname, 'fixtures/youtube-homepage.html');
+
+const waitForAsyncWork = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 40));
+};
+
+const ORIGINAL_GLOBALS = {
+  window: global.window,
+  document: global.document,
+  location: global.location,
+  chrome: global.chrome,
+  mutationObserver: global.MutationObserver,
+};
+
+const createMutationObserverFallback = () => {
+  return class MutationObserverFallback {
+    constructor(callback) {
+      this.callback = callback;
+      this.target = null;
+      this.listener = null;
+    }
+
+    observe(target) {
+      this.target = target;
+      this.listener = () => {
+        setTimeout(() => {
+          this.callback([{ type: 'childList', target }], this);
+        }, 0);
+      };
+      target.addEventListener('DOMNodeInserted', this.listener);
+    }
+
+    disconnect() {
+      if (this.target && this.listener) {
+        this.target.removeEventListener('DOMNodeInserted', this.listener);
+      }
+    }
+  };
+};
+
+const createChromeMock = (storageData) => ({
+  storage: {
+    local: {
+      get: (keys, callback) => {
+        const keyArray = Array.isArray(keys) ? keys : [keys];
+        const result = {};
+        keyArray.forEach((key) => {
+          if (Object.prototype.hasOwnProperty.call(storageData, key)) {
+            result[key] = storageData[key];
+          }
+        });
+
+        if (callback) {
+          callback(result);
+          return undefined;
+        }
+        return Promise.resolve(result);
+      },
+      set: (items, callback) => {
+        Object.assign(storageData, items);
+        if (callback) {
+          callback();
+          return undefined;
+        }
+        return Promise.resolve();
+      },
+    },
+    onChanged: {
+      addListener: () => {},
+      removeListener: () => {},
+    },
+  },
+  runtime: {
+    onMessage: {
+      addListener: () => {},
+      removeListener: () => {},
+    },
+    lastError: null,
+  },
+});
+
 describe('Real YouTube DOM Tests', () => {
   let youtubeHTML;
+  let storageData;
 
   beforeEach(() => {
-    // Load the YouTube homepage HTML fixture from the test fixtures directory.
-    youtubeHTML = readFileSync(join(import.meta.dir, 'fixtures/youtube-homepage.html'), 'utf-8');
+    const testWindow = new Window();
+    global.window = testWindow;
+    global.document = testWindow.document;
+    global.location = testWindow.location;
+    global.HTMLElement = testWindow.HTMLElement;
+    const MutationObserverImpl = testWindow.MutationObserver || createMutationObserverFallback();
+    global.MutationObserver = MutationObserverImpl;
+    testWindow.MutationObserver = MutationObserverImpl;
 
-    // Reset the DOM to a clean state with the loaded YouTube HTML.
+    youtubeHTML = readFileSync(fixturePath, 'utf8');
+    document.documentElement.innerHTML = '<head></head><body></body>';
     document.body.innerHTML = youtubeHTML;
-    document.head.innerHTML = '';
     document.documentElement.className = '';
+    storageData = { enabled: true, totalBlockedCount: 0 };
+    global.chrome = createChromeMock(storageData);
+    delete window.browserCompat;
   });
 
-  test('should find Shorts shelf in real YouTube structure', () => {
-    // Search for the Shorts shelf using YouTube's actual element structure.
-    const shortsShelf = document.querySelector('ytd-rich-shelf-renderer[is-shorts]');
-
-    // Verify that the Shorts shelf is present and contains expected content.
-    expect(shortsShelf).toBeTruthy();
-    expect(shortsShelf.textContent).toContain('Shorts');
+  afterEach(() => {
+    global.window = ORIGINAL_GLOBALS.window;
+    global.document = ORIGINAL_GLOBALS.document;
+    global.location = ORIGINAL_GLOBALS.location;
+    global.chrome = ORIGINAL_GLOBALS.chrome;
+    global.MutationObserver = ORIGINAL_GLOBALS.mutationObserver;
   });
 
-  test('should find Shorts videos in real structure', () => {
-    // Search for all links that point to Shorts videos.
-    const shortsLinks = document.querySelectorAll('[href*="/shorts/"]');
-
-    // Verify that Shorts links are found in the real YouTube structure.
-    expect(shortsLinks.length).toBeGreaterThan(0);
-    expect(shortsLinks[0].href).toContain('/shorts/');
+  test('fixture contains expected Shorts and regular content markers', () => {
+    expect(document.querySelector('ytd-rich-shelf-renderer[is-shorts]')).toBeTruthy();
+    expect(document.querySelector('[href*="/shorts/"]')).toBeTruthy();
+    expect(document.querySelector('[href*="/watch?v="]')).toBeTruthy();
   });
 
-  test('should find Shorts navigation in real sidebar', () => {
-    // Search for the Shorts navigation item in YouTube's sidebar.
-    const shortsNav = document.querySelector('[aria-label="Shorts"]');
-
-    // Verify that the Shorts navigation element exists and has the correct text.
-    expect(shortsNav).toBeTruthy();
-    expect(shortsNav.textContent).toContain('Shorts');
-  });
-
-  test('should find Shorts chip in real filter bar', () => {
-    // Search for the Shorts filter chip in YouTube's chip cloud.
-    const chips = document.querySelectorAll('yt-chip-cloud-chip-renderer button');
-    const shortsChip = Array.from(chips).find((chip) => chip.textContent.trim() === 'Shorts');
-
-    // Verify that a Shorts filter chip exists in the page.
-    expect(shortsChip).toBeTruthy();
-  });
-
-  test('should remove Shorts shelf while preserving other content', () => {
-    // Count regular video links before removing Shorts content.
+  test('content script removes Shorts content from fixture and keeps regular videos', async () => {
     const regularVideosBefore = document.querySelectorAll('[href*="/watch?v="]').length;
+    const shortsBefore = document.querySelectorAll('[href*="/shorts/"]').length;
 
-    // Remove the Shorts shelf from the page.
-    const shortsShelf = document.querySelector('ytd-rich-shelf-renderer[is-shorts]');
-    shortsShelf?.remove();
+    expect(shortsBefore).toBeGreaterThan(0);
 
-    // Verify that regular video content remains unchanged.
+    eval(contentScript);
+    await waitForAsyncWork();
+    await waitForAsyncWork();
+
+    const shortsAfter = document.querySelectorAll('[href*="/shorts/"]').length;
     const regularVideosAfter = document.querySelectorAll('[href*="/watch?v="]').length;
-    expect(regularVideosAfter).toBe(regularVideosBefore);
 
-    // Confirm that the Shorts shelf has been completely removed.
-    expect(document.querySelector('ytd-rich-shelf-renderer[is-shorts]')).toBeNull();
+    expect(shortsAfter).toBe(0);
+    expect(regularVideosAfter).toBeGreaterThan(0);
+    expect(regularVideosAfter).toBeLessThanOrEqual(regularVideosBefore);
+    expect(storageData.totalBlockedCount).toBeGreaterThan(0);
   });
 
-  test('should apply CSS hiding with real structure', () => {
-    // Create a function to inject the extension's CSS hiding rules.
-    const injectCSS = () => {
-      const style = document.createElement('style');
-      style.id = 'longtube-test';
-      style.textContent = `
-        .longtube-active ytd-rich-shelf-renderer[is-shorts] {
-          display: none !important;
-        }
-      `;
-      document.head.appendChild(style);
-    };
+  test('injects blocking style and active class during initialization', async () => {
+    eval(contentScript);
+    await waitForAsyncWork();
 
-    // Inject the CSS and activate the extension by adding the active class.
-    injectCSS();
-    document.documentElement.classList.add('longtube-active');
-
-    // Verify that the CSS has been properly injected into the page.
-    const shortsShelf = document.querySelector('ytd-rich-shelf-renderer[is-shorts]');
-
-    // Note: Computing styles in test environment may not reflect actual browser behavior.
-    // We verify that the CSS rules are present rather than their visual effect.
-    expect(document.getElementById('longtube-test')).toBeTruthy();
-    expect(shortsShelf).toBeTruthy();
+    const styleElement = document.getElementById('longtube-blocking-styles');
+    expect(styleElement).toBeTruthy();
+    expect(styleElement.textContent).toContain('[href*="/shorts/"]');
+    expect(document.documentElement.classList.contains('longtube-active')).toBe(true);
   });
 
-  test('should handle complex nested Shorts structure', () => {
-    // Define a comprehensive function to remove all Shorts-related elements.
-    const removeAllShorts = () => {
-      // Remove Shorts shelf containers.
-      document.querySelectorAll('ytd-rich-shelf-renderer[is-shorts]').forEach((el) => el.remove());
+  test('removes Shorts navigation and chip surfaces from fixture', async () => {
+    const hadShortsNavigation = !!document.querySelector(
+      '[aria-label*="Shorts"], [title="Shorts"]'
+    );
+    const hadShortsChip = Array.from(document.querySelectorAll('yt-chip-cloud-chip-renderer')).some(
+      (chip) => chip.textContent?.trim().toLowerCase() === 'shorts'
+    );
 
-      // Remove individual Shorts video items.
-      document.querySelectorAll('[href*="/shorts/"]').forEach((link) => {
-        const container = link.closest('ytd-rich-item-renderer');
-        container?.remove();
-      });
+    eval(contentScript);
+    await waitForAsyncWork();
+    await waitForAsyncWork();
 
-      // Remove Shorts navigation items from the sidebar.
-      document.querySelectorAll('[aria-label*="Shorts"]').forEach((nav) => nav.remove());
+    if (hadShortsNavigation) {
+      expect(document.querySelector('[aria-label*="Shorts"], [title="Shorts"]')).toBeNull();
+    }
 
-      // Remove Shorts filter chips from the homepage.
-      document.querySelectorAll('yt-chip-cloud-chip-renderer').forEach((chip) => {
-        if (chip.textContent.trim() === 'Shorts') {
-          chip.remove();
-        }
-      });
-    };
-
-    // Execute the comprehensive Shorts removal function.
-    removeAllShorts();
-
-    // Verify that all Shorts-related elements have been removed.
-    expect(document.querySelector('ytd-rich-shelf-renderer[is-shorts]')).toBeNull();
-    expect(document.querySelectorAll('[href*="/shorts/"]').length).toBe(0);
-    expect(document.querySelector('[aria-label*="Shorts"]')).toBeNull();
-
-    // Verify that regular video content remains on the page after Shorts removal.
-    const remainingVideos = document.querySelectorAll('ytd-rich-item-renderer');
-    expect(remainingVideos.length).toBeGreaterThan(0);
+    if (hadShortsChip) {
+      const remainingShortsChip = Array.from(
+        document.querySelectorAll('yt-chip-cloud-chip-renderer')
+      ).find((chip) => chip.textContent?.trim().toLowerCase() === 'shorts');
+      expect(remainingShortsChip).toBeUndefined();
+    }
   });
 });

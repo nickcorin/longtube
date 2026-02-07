@@ -1,102 +1,72 @@
-/**
- * Test environment setup for the LongTube extension test suite.
- * This file configures a DOM environment using happy-dom and provides
- * mock implementations of browser APIs required for testing both Chrome and Firefox.
- */
-
 import { test } from 'bun:test';
 import { Window } from 'happy-dom';
 
 const window = new Window();
 const document = window.document;
 
-// Make DOM globals available in the test environment.
 global.window = window;
 global.document = document;
 global.HTMLElement = window.HTMLElement;
 
-// Provide a MutationObserver implementation if not available in happy-dom.
-// This ensures tests can verify DOM observation functionality.
 if (!window.MutationObserver) {
-  class MutationObserver {
+  class MutationObserverFallback {
     constructor(callback) {
       this.callback = callback;
-      this.observing = false;
+      this.target = null;
+      this.listener = null;
     }
 
-    observe(target, options) {
-      this.observing = true;
+    observe(target) {
       this.target = target;
-      this.options = options;
-
-      // Simulate DOM observation by listening for DOM insertion events.
-      // Callbacks are triggered asynchronously to mimic real browser behavior.
-      if (target && target.addEventListener) {
-        this._listener = () => {
-          setTimeout(() => {
-            if (this.observing && this.callback) {
-              this.callback([{ type: 'childList', target }], this);
-            }
-          }, 0);
-        };
-        target.addEventListener('DOMNodeInserted', this._listener);
-      }
+      this.listener = () => {
+        setTimeout(() => this.callback([{ type: 'childList', target }], this), 0);
+      };
+      target?.addEventListener?.('DOMNodeInserted', this.listener);
     }
 
     disconnect() {
-      this.observing = false;
-      if (this.target && this._listener) {
-        this.target.removeEventListener('DOMNodeInserted', this._listener);
-      }
+      this.target?.removeEventListener?.('DOMNodeInserted', this.listener);
     }
   }
 
-  global.MutationObserver = MutationObserver;
-  window.MutationObserver = MutationObserver;
-  Window.prototype.MutationObserver = MutationObserver;
+  global.MutationObserver = MutationObserverFallback;
+  window.MutationObserver = MutationObserverFallback;
+  Window.prototype.MutationObserver = MutationObserverFallback;
 }
 
-// Storage mock that works for both Chrome and Firefox styles.
 class StorageMock {
   constructor() {
     this.data = {};
+    this.listeners = [];
   }
 
   get(keys, callback) {
-    const result = {};
-    const keyArray = Array.isArray(keys) ? keys : [keys];
+    const values = {};
+    for (const key of Array.isArray(keys) ? keys : [keys]) {
+      if (this.data[key] !== undefined) values[key] = this.data[key];
+    }
 
-    keyArray.forEach((key) => {
-      if (this.data[key] !== undefined) {
-        result[key] = this.data[key];
-      }
-    });
-
-    // Support both callback style (Chrome) and Promise style (Firefox).
     if (callback) {
-      setTimeout(() => callback(result), 0);
+      setTimeout(() => callback(values), 0);
       return undefined;
     }
-    return Promise.resolve(result);
+    return Promise.resolve(values);
   }
 
   set(items, callback) {
+    const previous = { ...this.data };
     Object.assign(this.data, items);
 
-    // Trigger storage change listeners.
-    if (this.onChangedListeners) {
-      const changes = {};
-      Object.keys(items).forEach((key) => {
-        changes[key] = { newValue: items[key], oldValue: this.data[key] };
-      });
-      this.onChangedListeners.forEach((listener) => {
-        setTimeout(() => listener(changes, 'local'), 0);
-      });
+    const changes = {};
+    for (const key of Object.keys(items)) {
+      changes[key] = { oldValue: previous[key], newValue: this.data[key] };
+    }
+    for (const listener of this.listeners) {
+      setTimeout(() => listener(changes, 'local'), 0);
     }
 
-    // Support both callback style (Chrome) and Promise style (Firefox).
     if (callback) {
-      setTimeout(() => callback(), 0);
+      setTimeout(callback, 0);
       return undefined;
     }
     return Promise.resolve();
@@ -105,35 +75,26 @@ class StorageMock {
   clear(callback) {
     this.data = {};
     if (callback) {
-      setTimeout(() => callback(), 0);
+      setTimeout(callback, 0);
       return undefined;
     }
     return Promise.resolve();
   }
 }
 
-// Create storage change listener support.
-const storageOnChangedListeners = [];
+const storage = new StorageMock();
+const storageOnChanged = {
+  addListener: (listener) => storage.listeners.push(listener),
+  removeListener: (listener) => {
+    const index = storage.listeners.indexOf(listener);
+    if (index >= 0) storage.listeners.splice(index, 1);
+  },
+};
 
-// Chrome-style API mock.
 global.chrome = {
   storage: {
-    local: new StorageMock(),
-    onChanged: {
-      addListener: (callback) => {
-        storageOnChangedListeners.push(callback);
-        if (!global.chrome.storage.local.onChangedListeners) {
-          global.chrome.storage.local.onChangedListeners = [];
-        }
-        global.chrome.storage.local.onChangedListeners.push(callback);
-      },
-      removeListener: (callback) => {
-        const index = storageOnChangedListeners.indexOf(callback);
-        if (index > -1) {
-          storageOnChangedListeners.splice(index, 1);
-        }
-      },
-    },
+    local: storage,
+    onChanged: storageOnChanged,
   },
   runtime: {
     onMessage: {
@@ -143,17 +104,17 @@ global.chrome = {
     lastError: null,
   },
   tabs: {
-    query: (queryInfo, callback) => {
-      const mockTabs = [{ id: 1, url: 'https://www.youtube.com/' }];
+    query: (_queryInfo, callback) => {
+      const tabs = [{ id: 1, url: 'https://www.youtube.com/' }];
       if (callback) {
-        setTimeout(() => callback(mockTabs), 0);
+        setTimeout(() => callback(tabs), 0);
         return undefined;
       }
-      return Promise.resolve(mockTabs);
+      return Promise.resolve(tabs);
     },
-    sendMessage: (tabId, message, callback) => {
+    sendMessage: (_tabId, _message, callback) => {
       if (callback) {
-        setTimeout(() => callback(), 0);
+        setTimeout(callback, 0);
         return undefined;
       }
       return Promise.resolve();
@@ -161,18 +122,14 @@ global.chrome = {
   },
 };
 
-// Firefox-style API mock (Promise-based).
 global.browser = {
   storage: {
     local: {
-      get: (keys) => global.chrome.storage.local.get(keys),
-      set: (items) => global.chrome.storage.local.set(items),
-      clear: () => global.chrome.storage.local.clear(),
+      get: (keys) => storage.get(keys),
+      set: (items) => storage.set(items),
+      clear: () => storage.clear(),
     },
-    onChanged: {
-      addListener: global.chrome.storage.onChanged.addListener,
-      removeListener: global.chrome.storage.onChanged.removeListener,
-    },
+    onChanged: storageOnChanged,
   },
   runtime: {
     onMessage: {
@@ -186,14 +143,10 @@ global.browser = {
   },
 };
 
-// Helper function to set up browser environment for tests.
 export function setupBrowserEnvironment(browserType = 'chrome') {
-  // Reset storage data.
-  global.chrome.storage.local.data = {};
+  storage.data = {};
 
-  // Set up browserCompat based on browser type.
   if (browserType === 'firefox') {
-    // Simulate Firefox environment with browser API.
     window.browserCompat = {
       browser: { name: 'firefox', engine: 'gecko' },
       storage: {
@@ -204,23 +157,19 @@ export function setupBrowserEnvironment(browserType = 'chrome') {
       tabs: global.browser.tabs,
     };
   } else {
-    // For Chrome, browserCompat is not needed (fallback to chrome API).
     delete window.browserCompat;
   }
 
-  // Make browserCompat available globally for tests.
   global.browserCompat = window.browserCompat;
 }
 
-// Helper to test with both browsers.
 export function testWithBrowsers(testName, testFn) {
-  ['chrome', 'firefox'].forEach((browser) => {
-    test(`${testName} (${browser})`, () => {
-      setupBrowserEnvironment(browser);
-      return testFn(browser);
+  for (const browserType of ['chrome', 'firefox']) {
+    test(`${testName} (${browserType})`, () => {
+      setupBrowserEnvironment(browserType);
+      return testFn(browserType);
     });
-  });
+  }
 }
 
-// Export the setup for use in test files.
 export { window, document };

@@ -1,200 +1,242 @@
-import { test, expect, describe, beforeEach } from 'bun:test';
+import { test, expect, describe, beforeEach, afterEach } from 'bun:test';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { Window } from 'happy-dom';
 
-/**
- * Edge case tests for the LongTube extension.
- * These tests verify that the extension handles unusual scenarios, performance
- * concerns, and boundary conditions gracefully without breaking functionality.
- */
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const contentScript = readFileSync(join(__dirname, '../../src/content.js'), 'utf8');
+
+const waitForAsyncWork = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 35));
+};
+
+const ORIGINAL_GLOBALS = {
+  window: global.window,
+  document: global.document,
+  location: global.location,
+  chrome: global.chrome,
+  mutationObserver: global.MutationObserver,
+};
+
+const createMutationObserverFallback = () => {
+  return class MutationObserverFallback {
+    constructor(callback) {
+      this.callback = callback;
+      this.target = null;
+      this.listener = null;
+    }
+
+    observe(target) {
+      this.target = target;
+      this.listener = () => {
+        setTimeout(() => {
+          this.callback([{ type: 'childList', target }], this);
+        }, 0);
+      };
+      target.addEventListener('DOMNodeInserted', this.listener);
+    }
+
+    disconnect() {
+      if (this.target && this.listener) {
+        this.target.removeEventListener('DOMNodeInserted', this.listener);
+      }
+    }
+  };
+};
+
+const createChromeMock = (storageData) => ({
+  storage: {
+    local: {
+      get: (keys, callback) => {
+        const result = {};
+        const keyArray = Array.isArray(keys) ? keys : [keys];
+
+        keyArray.forEach((key) => {
+          if (Object.prototype.hasOwnProperty.call(storageData, key)) {
+            result[key] = storageData[key];
+          }
+        });
+
+        if (callback) {
+          callback(result);
+          return undefined;
+        }
+        return Promise.resolve(result);
+      },
+      set: (items, callback) => {
+        Object.assign(storageData, items);
+        if (callback) {
+          callback();
+          return undefined;
+        }
+        return Promise.resolve();
+      },
+    },
+    onChanged: {
+      addListener: () => {},
+      removeListener: () => {},
+    },
+  },
+  runtime: {
+    onMessage: {
+      addListener: () => {},
+      removeListener: () => {},
+    },
+    lastError: null,
+  },
+});
+
+const setupEnvironment = ({
+  html = '',
+  url = 'https://www.youtube.com/',
+  initialStorage = { enabled: true, totalBlockedCount: 0 },
+} = {}) => {
+  const testWindow = new Window();
+  global.window = testWindow;
+  global.document = testWindow.document;
+  global.location = testWindow.location;
+  global.HTMLElement = testWindow.HTMLElement;
+  const MutationObserverImpl = testWindow.MutationObserver || createMutationObserverFallback();
+  global.MutationObserver = MutationObserverImpl;
+  testWindow.MutationObserver = MutationObserverImpl;
+
+  document.documentElement.innerHTML = '<head></head><body></body>';
+  document.body.innerHTML = html;
+  document.documentElement.className = '';
+
+  const storageData = { ...initialStorage };
+  global.chrome = createChromeMock(storageData);
+  delete window.browserCompat;
+
+  try {
+    window.location.href = url;
+  } catch {
+    // Ignore URL assignment failures in test environment.
+  }
+
+  return storageData;
+};
 
 describe('Edge Cases', () => {
+  afterEach(() => {
+    global.window = ORIGINAL_GLOBALS.window;
+    global.document = ORIGINAL_GLOBALS.document;
+    global.location = ORIGINAL_GLOBALS.location;
+    global.chrome = ORIGINAL_GLOBALS.chrome;
+    global.MutationObserver = ORIGINAL_GLOBALS.mutationObserver;
+  });
+
   beforeEach(() => {
-    // Reset both body and head elements to ensure a clean test environment.
-    document.body.innerHTML = '';
-    document.head.innerHTML = '';
+    setupEnvironment();
   });
 
-  describe('Performance', () => {
-    test('should handle pages with many Shorts efficiently', () => {
-      // Create a page with 100 Shorts videos to test performance at scale.
-      const shorts = Array(100)
-        .fill(0)
-        .map(
-          (_, i) =>
-            `<ytd-video-renderer><a href="/shorts/${i}">Shorts ${i}</a></ytd-video-renderer>`
-        )
-        .join('');
-      document.body.innerHTML = shorts;
+  test('handles empty pages without throwing and still injects styles', async () => {
+    eval(contentScript);
+    await waitForAsyncWork();
 
-      // Measure the time taken to remove all Shorts elements.
-      const start = performance.now();
-      document.querySelectorAll('[href*="/shorts/"]').forEach((link) => {
-        link.closest('ytd-video-renderer')?.remove();
-      });
-      const duration = performance.now() - start;
-
-      // Verify that the removal operation completes quickly even with many elements.
-      expect(duration).toBeLessThan(50);
-      expect(document.querySelectorAll('ytd-video-renderer').length).toBe(0);
-    });
-
-    test('should not create memory leaks with WeakSet', () => {
-      // Use WeakSet to track removed elements without preventing garbage collection.
-      const removedElements = new WeakSet();
-
-      // Add an element to the WeakSet to test proper tracking.
-      const element = document.createElement('div');
-      removedElements.add(element);
-
-      // Verify that the element is tracked but can be garbage collected when dereferenced.
-      expect(removedElements.has(element)).toBe(true);
-      // Note: WeakSet allows garbage collection of elements when no other references exist.
-    });
+    expect(document.getElementById('longtube-blocking-styles')).toBeTruthy();
+    expect(document.documentElement.classList.contains('longtube-active')).toBe(true);
   });
 
-  describe('Reliability', () => {
-    test('should handle missing elements gracefully', () => {
-      // Create a removal function that safely handles non-existent elements.
-      const safeRemove = () => {
-        const elements = document.querySelectorAll('.not-exists');
-        elements.forEach((el) => el?.remove());
-      };
+  test('handles large numbers of Shorts elements while preserving regular content', async () => {
+    const shortsHtml = Array.from({ length: 120 })
+      .map(
+        (_, index) => `
+          <ytd-video-renderer class="short-${index}">
+            <a href="/shorts/${index}">Shorts ${index}</a>
+          </ytd-video-renderer>
+        `
+      )
+      .join('');
 
-      // Verify that the function doesn't throw errors when elements don't exist.
-      expect(() => safeRemove()).not.toThrow();
-    });
+    const regularHtml = `
+      <ytd-video-renderer id="regular-video">
+        <a href="/watch?v=abc123">Regular Video</a>
+      </ytd-video-renderer>
+    `;
 
-    test('should handle storage errors gracefully', () => {
-      // Simulate a Chrome storage API that throws errors.
-      global.chrome.storage.local.get = (_keys, _cb) => {
-        throw new Error('Storage error');
-      };
+    setupEnvironment({ html: `${shortsHtml}${regularHtml}` });
 
-      // Create a function that safely reads from storage with error handling.
-      const safeStorageRead = () => {
-        try {
-          chrome.storage.local.get(['enabled'], () => {});
-        } catch {
-          return false; // Default to disabled on error
-        }
-      };
+    const start = Date.now();
+    eval(contentScript);
+    await waitForAsyncWork();
+    const durationMs = Date.now() - start;
 
-      // Verify that storage errors are caught and handled with a safe default.
-      expect(safeStorageRead()).toBe(false);
-    });
-
-    test('should work with different YouTube URL formats', () => {
-      // Test various YouTube URL formats to ensure compatibility.
-      const urls = [
-        'https://www.youtube.com/shorts/abc123',
-        'https://youtube.com/shorts/abc123',
-        'https://m.youtube.com/shorts/abc123',
-        'https://www.youtube.com/shorts/abc123?feature=share',
-      ];
-
-      // Create a function to detect Shorts URLs.
-      const isShorts = (url) => url.includes('/shorts');
-
-      // Verify that all URL formats are correctly identified as Shorts.
-      urls.forEach((url) => {
-        expect(isShorts(url)).toBe(true);
-      });
-    });
+    expect(document.querySelectorAll('[href*="/shorts/"]').length).toBe(0);
+    expect(document.getElementById('regular-video')).toBeTruthy();
+    expect(durationMs).toBeLessThan(1500);
   });
 
-  describe('User Experience', () => {
-    test('should not remove non-Shorts content', () => {
-      // Create a page with mixed content types to test selective removal.
-      document.body.innerHTML = `
-        <ytd-video-renderer><a href="/watch?v=123">Regular Video</a></ytd-video-renderer>
-        <ytd-video-renderer><a href="/shorts/456">Shorts Video</a></ytd-video-renderer>
-        <ytd-playlist-renderer><a href="/playlist?list=789">Playlist</a></ytd-playlist-renderer>
-      `;
-
-      // Remove only Shorts content while preserving other video types.
-      document.querySelectorAll('[href*="/shorts/"]').forEach((link) => {
-        link.closest('ytd-video-renderer')?.remove();
-      });
-
-      // Verify that regular videos and playlists remain untouched.
-      expect(document.querySelectorAll('ytd-video-renderer').length).toBe(1);
-      expect(document.querySelector('ytd-playlist-renderer')).toBeTruthy();
+  test('removes multiple Shorts surfaces in one pass', async () => {
+    const storageData = setupEnvironment({
+      html: `
+        <ytd-video-renderer id="short-video">
+          <a href="/shorts/short-1">Shorts Video</a>
+        </ytd-video-renderer>
+        <ytd-guide-entry-renderer id="short-nav">
+          <a title="Shorts" href="/shorts/nav">Shorts Nav</a>
+        </ytd-guide-entry-renderer>
+        <yt-chip-cloud-chip-renderer id="short-chip">Shorts</yt-chip-cloud-chip-renderer>
+        <ytd-video-renderer id="regular-video">
+          <a href="/watch?v=abc123">Regular Video</a>
+        </ytd-video-renderer>
+      `,
     });
 
-    test('should handle dynamic class names', () => {
-      // Test that the extension can find Shorts using various attribute selectors.
-      const selectors = ['[href*="/shorts/"]', '[title="Shorts"]', '[aria-label*="Shorts"]'];
+    eval(contentScript);
+    await waitForAsyncWork();
+    await waitForAsyncWork();
 
-      document.body.innerHTML = `
-        <a href="/shorts/123">Link</a>
-        <div title="Shorts">Title</div>
-        <div aria-label="Shorts videos">Aria</div>
-      `;
+    expect(document.getElementById('short-video')).toBeNull();
+    expect(document.getElementById('short-nav')).toBeNull();
+    expect(document.getElementById('short-chip')).toBeNull();
+    expect(document.getElementById('regular-video')).toBeTruthy();
+    expect(storageData.totalBlockedCount).toBeGreaterThan(0);
+  });
 
-      // Count elements found using different selector strategies.
-      let found = 0;
-      selectors.forEach((selector) => {
-        found += document.querySelectorAll(selector).length;
-      });
+  test('redirect logic triggers for long and special-character Shorts URLs', async () => {
+    const originalRandom = Math.random;
 
-      // Verify that all selector variants successfully identify Shorts elements.
-      expect(found).toBe(3);
+    setupEnvironment({
+      url: 'https://www.youtube.com/shorts/abc-123_xyz-%E2%9C%85',
+      html: '<div>Shorts page</div>',
     });
 
-    test('should preserve YouTube player functionality', () => {
-      // Create a mock YouTube video player element.
-      document.body.innerHTML = `
+    try {
+      Math.random = () => 0.5;
+
+      eval(contentScript);
+      await waitForAsyncWork();
+    } finally {
+      Math.random = originalRandom;
+    }
+
+    expect(window.location.pathname).toBe('/watch');
+    expect(window.location.href).toContain('watch?v=');
+  });
+
+  test('keeps non-Shorts content and player elements intact', async () => {
+    setupEnvironment({
+      html: `
         <div id="movie_player" class="html5-video-player">
           <video src="/watch?v=123"></video>
         </div>
-      `;
-
-      // Verify that the extension doesn't interfere with the video player.
-      const player = document.getElementById('movie_player');
-
-      // Ensure the player and its video element remain intact.
-      expect(player).toBeTruthy();
-      expect(player.querySelector('video')).toBeTruthy();
-    });
-  });
-
-  describe('Boundary Conditions', () => {
-    test('should handle empty page', () => {
-      // Test behavior on a completely empty page.
-      document.body.innerHTML = '';
-
-      // Attempt to find and remove Shorts elements on an empty page.
-      const removed = document.querySelectorAll('[href*="/shorts/"]');
-
-      // Verify that the extension handles empty pages without errors.
-      expect(removed.length).toBe(0);
+        <ytd-video-renderer id="regular-video">
+          <a href="/watch?v=123">Regular Video</a>
+        </ytd-video-renderer>
+        <ytd-video-renderer id="short-video">
+          <a href="/shorts/456">Shorts Video</a>
+        </ytd-video-renderer>
+      `,
     });
 
-    test('should handle very long Shorts IDs', () => {
-      // Create a Shorts link with an extremely long ID to test edge cases.
-      const longId = 'x'.repeat(100);
-      document.body.innerHTML = `
-        <a href="/shorts/${longId}">Long Shorts</a>
-      `;
+    eval(contentScript);
+    await waitForAsyncWork();
 
-      // Verify that the selector still works with unusually long IDs.
-      const isShorts = document.querySelector('[href*="/shorts/"]');
-
-      // Confirm that long IDs don't break the detection logic.
-      expect(isShorts).toBeTruthy();
-    });
-
-    test('should handle special characters in URLs', () => {
-      // Create URLs containing special characters and Unicode to test robustness.
-      document.body.innerHTML = `
-        <a href="/shorts/abc-123_xyz">Shorts with special chars</a>
-        <a href="/shorts/видео">Shorts with unicode</a>
-      `;
-
-      // Select all Shorts links regardless of special characters in the URL.
-      const shorts = document.querySelectorAll('[href*="/shorts/"]');
-
-      // Verify that the selector works with various character encodings.
-      expect(shorts.length).toBe(2);
-    });
+    expect(document.getElementById('short-video')).toBeNull();
+    expect(document.getElementById('regular-video')).toBeTruthy();
+    expect(document.getElementById('movie_player')).toBeTruthy();
+    expect(document.querySelector('#movie_player video')).toBeTruthy();
   });
 });
