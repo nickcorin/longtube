@@ -1,7 +1,5 @@
 'use strict';
 
-// Use the browser compatibility layer from browser-compat.js.
-// Fallback to chrome API if browserCompat is not available (Chrome doesn't need the compat layer).
 const browserAPI = window.browserCompat || {
   storage: {
     local: chrome.storage.local,
@@ -10,22 +8,14 @@ const browserAPI = window.browserCompat || {
   runtime: chrome.runtime,
 };
 
-/**
- * LongTube extension content script that blocks YouTube Shorts content.
- * This script runs on YouTube pages and removes Shorts videos, shelves, navigation items,
- * and redirects users away from Shorts pages.
- */
-
-// Extension configuration constants.
-const EXTENSION_NAME = 'LongTube';
 const STYLE_ID = 'longtube-blocking-styles';
 const ACTIVE_CLASS = 'longtube-active';
-const REDIRECT_DELAY = 100; // Milliseconds to wait before removing elements after navigation.
-const PROBABILITY_TOTAL = 69; // Total probability value for weighted random redirect.
+const REDIRECT_DELAY = 100;
 const RICK_ROLL_URL = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
 const ALTERNATE_URL = 'https://www.youtube.com/watch?v=9Deg7VrpHbM';
+const OBSERVER_CONFIG = { childList: true, subtree: true };
+const DEBUG = false;
 
-// CSS selectors for YouTube elements organized by type.
 const SELECTORS = {
   shortsContainers: 'ytd-rich-shelf-renderer[is-shorts], ytd-reel-shelf-renderer',
   shortsLinks: '[href*="/shorts/"]',
@@ -37,7 +27,6 @@ const SELECTORS = {
   chipContainer: 'yt-chip-cloud-chip-renderer',
 };
 
-// CSS rules that hide Shorts elements when the extension is active.
 const BLOCKING_CSS = `
   .${ACTIVE_CLASS} ytd-rich-shelf-renderer[is-shorts],
   .${ACTIVE_CLASS} ytd-reel-shelf-renderer,
@@ -64,83 +53,31 @@ const BLOCKING_CSS = `
   }
 `;
 
-/**
- * Manages the extension's state including enabled status and blocked element tracking.
- */
-class ExtensionState {
-  constructor() {
-    this.isEnabled = true;
-    this.pageBlockedCount = 0;
-    this.removedElements = new WeakSet();
-  }
-
-  /**
-   * Increments the count of blocked elements on the current page.
-   * @param {number} count - The number of elements blocked.
-   */
-  incrementPageCount(count) {
-    this.pageBlockedCount += count;
-  }
-
-  /**
-   * Resets the page blocked count when navigating to a new page.
-   */
-  resetPageCount() {
-    this.pageBlockedCount = 0;
-  }
-
-  /**
-   * Checks if an element has already been removed to prevent duplicate processing.
-   * @param {Element} element - The DOM element to check.
-   * @returns {boolean} True if the element was already processed.
-   */
-  hasRemoved(element) {
-    return this.removedElements.has(element);
-  }
-
-  /**
-   * Marks an element as removed to track processed elements.
-   * @param {Element} element - The DOM element to mark as removed.
-   */
-  markAsRemoved(element) {
-    this.removedElements.add(element);
-  }
-}
-
-const state = new ExtensionState();
-
-/**
- * Logs messages with the extension name prefix for debugging.
- * @param {string} message - The message to log.
- * @param {...any} args - Additional arguments to pass to console.log.
- */
-const log = (message, ...args) => {
-  console.log(`${EXTENSION_NAME}: ${message}`, ...args);
+const state = {
+  isEnabled: true,
+  pageBlockedCount: 0,
+  removedElements: new WeakSet(),
+  pendingBlockedCount: 0,
+  isFlushingBlockedCount: false,
+  blockedCountRetryTimer: null,
+  reloadRequested: false,
 };
 
-/**
- * Determines if the current page is a YouTube Shorts page.
- * @returns {boolean} True if the current URL is a Shorts page.
- */
-const isOnShortsPage = () => {
-  const { pathname } = window.location;
-  return pathname.includes('/shorts') || pathname === '/shorts';
+const debugLog = (...args) => {
+  if (DEBUG) {
+    console.log('LongTube:', ...args);
+  }
 };
 
-/**
- * Returns a random redirect URL with weighted probability.
- * Returns the Rick Roll URL 68/69 times and the alternate URL 1/69 times.
- * @returns {string} The URL to redirect to.
- */
-const getRandomRedirectUrl = () => {
-  const randomNum = Math.floor(Math.random() * PROBABILITY_TOTAL);
-  return randomNum === 0 ? ALTERNATE_URL : RICK_ROLL_URL;
+const logError = (message, error) => {
+  console.error(`LongTube: ${message}`, error);
 };
 
-/**
- * Injects CSS rules to hide Shorts elements when the extension is enabled.
- * The CSS is only injected once and targets all Shorts-related elements.
- */
+const isOnShortsPage = () => window.location.pathname.includes('/shorts');
+
+const getRandomRedirectUrl = () =>
+  Math.floor(Math.random() * 69) === 0 ? ALTERNATE_URL : RICK_ROLL_URL;
+
 const injectBlockingCSS = () => {
   if (document.getElementById(STYLE_ID)) return;
 
@@ -152,65 +89,44 @@ const injectBlockingCSS = () => {
   target.appendChild(style);
 };
 
-/**
- * Redirects away from Shorts pages to a random video when blocking is enabled.
- * Only redirects if the extension is enabled and the current page is a Shorts page.
- */
 const checkAndRedirect = () => {
   if (!state.isEnabled || !isOnShortsPage()) return;
 
-  log('Redirecting away from Shorts');
+  debugLog('Redirecting away from Shorts');
   window.location.href = getRandomRedirectUrl();
 };
 
-/**
- * Removes elements matching a selector from the DOM.
- * @param {string} selector - CSS selector for elements to remove.
- * @param {function(Element): Element} getContainer - Function to get the container element to remove.
- * @param {function(Element): boolean} [additionalCheck=null] - Optional function to filter elements.
- * @returns {number} The count of removed elements.
- */
 const removeElements = (selector, getContainer, additionalCheck = null) => {
   let count = 0;
-  const elements = document.querySelectorAll(selector);
-
-  elements.forEach((element) => {
-    if (additionalCheck && !additionalCheck(element)) return;
+  for (const element of document.querySelectorAll(selector)) {
+    if (additionalCheck && !additionalCheck(element)) continue;
 
     const container = getContainer(element);
-    if (container && !state.hasRemoved(container)) {
-      state.markAsRemoved(container);
-      container.remove();
-      count++;
-    }
-  });
+    if (!container || state.removedElements.has(container)) continue;
+
+    state.removedElements.add(container);
+    container.remove();
+    count++;
+  }
 
   return count;
 };
 
-/**
- * Removes all Shorts-related elements from the current page.
- * This includes Shorts shelves, videos, navigation items, and filter chips.
- */
 const removeShortsFromDOM = () => {
   if (!state.isEnabled) return;
 
   let totalRemoved = 0;
 
-  // Remove dedicated Shorts shelf containers.
   totalRemoved += removeElements(SELECTORS.shortsContainers, (el) => el);
 
-  // Remove individual video containers that link to Shorts.
   totalRemoved += removeElements(SELECTORS.shortsLinks, (link) =>
     link.closest(SELECTORS.videoContainers)
   );
 
-  // Remove Shorts items from the navigation sidebar.
   totalRemoved += removeElements(SELECTORS.shortsNavigation, (el) =>
     el.closest(SELECTORS.navigationContainers)
   );
 
-  // Remove Shorts filter chips from the homepage.
   totalRemoved += removeElements(
     SELECTORS.shortsChips,
     (chip) => chip.closest(SELECTORS.chipContainer) || chip,
@@ -222,27 +138,54 @@ const removeShortsFromDOM = () => {
   }
 };
 
-/**
- * Updates the total blocked count in storage and the page count in state.
- * @param {number} count - The number of newly blocked elements.
- */
-const updateBlockedCount = async (count) => {
-  state.incrementPageCount(count);
+const flushBlockedCount = async () => {
+  if (state.isFlushingBlockedCount) return;
+
+  if (state.blockedCountRetryTimer) {
+    clearTimeout(state.blockedCountRetryTimer);
+    state.blockedCountRetryTimer = null;
+  }
+
+  state.isFlushingBlockedCount = true;
 
   try {
-    const result = await browserAPI.storage.local.get(['totalBlockedCount']);
-    const newTotal = (result.totalBlockedCount || 0) + count;
-    await browserAPI.storage.local.set({ totalBlockedCount: newTotal });
-    log(`Blocked ${count} new items, total: ${newTotal}, page: ${state.pageBlockedCount}`);
+    while (state.pendingBlockedCount > 0) {
+      const countToPersist = state.pendingBlockedCount;
+      state.pendingBlockedCount = 0;
+
+      try {
+        const result = await browserAPI.storage.local.get(['totalBlockedCount']);
+        const currentTotal = Number(result.totalBlockedCount) || 0;
+        const newTotal = currentTotal + countToPersist;
+        await browserAPI.storage.local.set({ totalBlockedCount: newTotal });
+        debugLog(
+          `Blocked ${countToPersist} new items, total: ${newTotal}, page: ${state.pageBlockedCount}`
+        );
+      } catch (error) {
+        state.pendingBlockedCount += countToPersist;
+        throw error;
+      }
+    }
   } catch (error) {
-    log('Error updating blocked count:', error);
+    logError('Error updating blocked count:', error);
+
+    if (!state.blockedCountRetryTimer) {
+      state.blockedCountRetryTimer = setTimeout(() => {
+        state.blockedCountRetryTimer = null;
+        void flushBlockedCount();
+      }, 1000);
+    }
+  } finally {
+    state.isFlushingBlockedCount = false;
   }
 };
 
-/**
- * Updates the page's blocking state by toggling CSS classes and removing elements.
- * @param {boolean} enabled - Whether blocking should be enabled.
- */
+const updateBlockedCount = (count) => {
+  state.pageBlockedCount += count;
+  state.pendingBlockedCount += count;
+  void flushBlockedCount();
+};
+
 const updateBlockingState = (enabled) => {
   const { documentElement } = document;
   if (!documentElement) return;
@@ -255,19 +198,23 @@ const updateBlockingState = (enabled) => {
   }
 };
 
-/**
- * Handles messages from the popup to toggle blocking or get status.
- * @param {Object} request - The message request object.
- * @param {MessageSender} _ - The sender information (unused).
- * @param {function} sendResponse - Function to send a response back.
- */
+const requestReload = () => {
+  if (state.reloadRequested) return;
+  state.reloadRequested = true;
+  window.location.reload();
+};
+
 const handleMessage = (request, _, sendResponse) => {
   switch (request.action) {
     case 'toggleBlocking':
       state.isEnabled = request.enabled;
-      browserAPI.storage.local.set({ enabled: state.isEnabled }).then(() => {
-        window.location.reload();
-      });
+      Promise.resolve(browserAPI.storage.local.set({ enabled: state.isEnabled }))
+        .catch((error) => {
+          logError('Failed to persist enabled state:', error);
+        })
+        .finally(() => {
+          requestReload();
+        });
       break;
 
     case 'getStatus':
@@ -279,23 +226,21 @@ const handleMessage = (request, _, sendResponse) => {
   }
 };
 
-/**
- * Creates an observer to watch for DOM changes and remove new Shorts elements.
- * @returns {MutationObserver} The configured mutation observer.
- */
-const createDOMObserver = () => {
-  return new MutationObserver(() => {
-    if (state.isEnabled) {
-      removeShortsFromDOM();
-    }
-  });
+const handleStorageChange = (changes, areaName) => {
+  if (areaName !== 'local' || !changes.enabled) return;
+
+  const nextEnabled = changes.enabled.newValue !== false;
+  if (nextEnabled === state.isEnabled) return;
+
+  state.isEnabled = nextEnabled;
+  requestReload();
 };
 
-/**
- * Creates an observer to detect navigation changes and handle page transitions.
- * YouTube uses client-side navigation, so URL changes need to be detected manually.
- * @returns {MutationObserver} The configured mutation observer.
- */
+const createDOMObserver = () =>
+  new MutationObserver(() => {
+    if (state.isEnabled) removeShortsFromDOM();
+  });
+
 const createNavigationObserver = () => {
   let lastUrl = location.href;
 
@@ -303,7 +248,7 @@ const createNavigationObserver = () => {
     const currentUrl = location.href;
     if (currentUrl !== lastUrl) {
       lastUrl = currentUrl;
-      state.resetPageCount();
+      state.pageBlockedCount = 0;
       checkAndRedirect();
 
       if (state.isEnabled) {
@@ -313,60 +258,49 @@ const createNavigationObserver = () => {
   });
 };
 
-/**
- * Initializes the extension by loading settings, injecting CSS, and setting up observers.
- * This is the main entry point that sets up all extension functionality.
- */
 const initialize = async () => {
   try {
-    // Load the enabled state from storage, defaulting to true.
     const result = await browserAPI.storage.local.get(['enabled']);
     state.isEnabled = result.enabled !== false;
-    log('Enabled =', state.isEnabled);
+    debugLog('Enabled =', state.isEnabled);
 
-    // Inject the blocking CSS rules into the page.
     injectBlockingCSS();
-
-    // Apply the initial blocking state.
     updateBlockingState(state.isEnabled);
-
-    // Check if we need to redirect away from a Shorts page.
     checkAndRedirect();
 
-    // Create observers for DOM and navigation changes.
     const domObserver = createDOMObserver();
     const navigationObserver = createNavigationObserver();
 
-    // Start observing DOM changes to catch dynamically loaded content.
     if (document.body) {
-      domObserver.observe(document.body, { childList: true, subtree: true });
+      domObserver.observe(document.body, OBSERVER_CONFIG);
     } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        if (document.body) {
-          domObserver.observe(document.body, { childList: true, subtree: true });
-        }
-      });
+      document.addEventListener(
+        'DOMContentLoaded',
+        () => {
+          if (!document.body) return;
+          domObserver.observe(document.body, OBSERVER_CONFIG);
+        },
+        { once: true }
+      );
     }
 
-    // Start observing for client-side navigation changes.
-    navigationObserver.observe(document, { subtree: true, childList: true });
+    navigationObserver.observe(document, OBSERVER_CONFIG);
 
-    // Apply blocking state when DOM is ready if not already loaded.
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        updateBlockingState(state.isEnabled);
-      });
-    } else {
-      updateBlockingState(state.isEnabled);
+      document.addEventListener(
+        'DOMContentLoaded',
+        () => {
+          if (state.isEnabled) removeShortsFromDOM();
+        },
+        { once: true }
+      );
     }
   } catch (error) {
-    log('Initialization error:', error);
+    logError('Initialization error:', error);
   }
 };
 
-// Set up the message listener for communication with the popup.
 browserAPI.runtime.onMessage.addListener(handleMessage);
-
-// Start the extension when the content script loads.
-log('Extension loaded');
+browserAPI.storage.onChanged.addListener(handleStorageChange);
+debugLog('Extension loaded');
 initialize();

@@ -1,125 +1,302 @@
-import { test, expect, describe, beforeEach } from 'bun:test';
+import { test, expect, describe, beforeEach, afterEach } from 'bun:test';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { Window } from 'happy-dom';
 
-/**
- * Integration tests for communication between the popup and content scripts.
- * These tests verify that messages are correctly passed between the extension's
- * components and that state changes are properly synchronized through Chrome storage.
- */
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const contentScript = readFileSync(join(__dirname, '../../src/content.js'), 'utf8');
+const popupScript = readFileSync(join(__dirname, '../../src/popup.js'), 'utf8');
 
-describe('Popup-Content Integration', () => {
-  let messages = [];
-  let storage = {};
+const waitForAsyncWork = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 40));
+};
 
-  beforeEach(() => {
-    // Reset the message queue and storage state before each test.
-    messages = [];
-    storage = { enabled: true };
+const createApiHarness = (initialStorage = {}) => {
+  const storageData = {
+    enabled: true,
+    totalBlockedCount: 0,
+    sessionStartCount: 0,
+    ...initialStorage,
+  };
+  const storageListeners = [];
+  const runtimeListeners = [];
+  const sentMessages = [];
 
-    // Mock Chrome extension APIs for message passing and storage.
-    global.chrome = {
-      tabs: {
-        query: (query, cb) => cb([{ id: 1, url: 'https://www.youtube.com' }]),
-        sendMessage: (tabId, message) => messages.push(message),
-        reload: (tabId, cb) => cb && cb(),
-      },
+  const getFromStorage = (keys) => {
+    if (!keys) return { ...storageData };
+    const keyArray = Array.isArray(keys) ? keys : [keys];
+    const result = {};
+    keyArray.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(storageData, key)) {
+        result[key] = storageData[key];
+      }
+    });
+    return result;
+  };
+
+  const setInStorage = (items) => {
+    const previousData = { ...storageData };
+    Object.assign(storageData, items);
+
+    const changes = {};
+    Object.keys(items).forEach((key) => {
+      changes[key] = {
+        oldValue: previousData[key],
+        newValue: storageData[key],
+      };
+    });
+    storageListeners.forEach((listener) => listener(changes, 'local'));
+  };
+
+  const sendMessageToContentScripts = async (tabId, message) => {
+    sentMessages.push({ tabId, message });
+    runtimeListeners.forEach((listener) => {
+      listener(message, { tab: { id: tabId } }, () => {});
+    });
+  };
+
+  const storageOnChanged = {
+    addListener: (listener) => storageListeners.push(listener),
+    removeListener: (listener) => {
+      const index = storageListeners.indexOf(listener);
+      if (index >= 0) storageListeners.splice(index, 1);
+    },
+  };
+
+  const runtimeOnMessage = {
+    addListener: (listener) => runtimeListeners.push(listener),
+    removeListener: (listener) => {
+      const index = runtimeListeners.indexOf(listener);
+      if (index >= 0) runtimeListeners.splice(index, 1);
+    },
+  };
+
+  return {
+    storageData,
+    sentMessages,
+    chrome: {
       storage: {
         local: {
-          get: (keys, cb) => cb(storage),
-          set: (items, cb) => {
-            Object.assign(storage, items);
-            cb && cb();
+          get: (keys, callback) => {
+            const result = getFromStorage(keys);
+            if (callback) {
+              callback(result);
+              return undefined;
+            }
+            return Promise.resolve(result);
+          },
+          set: (items, callback) => {
+            setInStorage(items);
+            if (callback) {
+              callback();
+              return undefined;
+            }
+            return Promise.resolve();
           },
         },
+        onChanged: storageOnChanged,
       },
       runtime: {
-        onMessage: {
-          addListener: (listener) => {
-            global.messageListener = listener;
-          },
+        onMessage: runtimeOnMessage,
+        lastError: null,
+      },
+      tabs: {
+        query: (_queryInfo, callback) => {
+          const tabs = [{ id: 1, url: 'https://www.youtube.com/' }];
+          if (callback) {
+            callback(tabs);
+            return undefined;
+          }
+          return Promise.resolve(tabs);
+        },
+        sendMessage: (tabId, message, callback) => {
+          const promise = sendMessageToContentScripts(tabId, message);
+          if (callback) {
+            promise.then(() => callback()).catch(() => callback());
+            return undefined;
+          }
+          return promise;
         },
       },
-    };
-  });
+    },
+    browserCompat: {
+      storage: {
+        local: {
+          get: async (keys) => getFromStorage(keys),
+          set: async (items) => setInStorage(items),
+        },
+        onChanged: storageOnChanged,
+      },
+      runtime: {
+        onMessage: runtimeOnMessage,
+      },
+      tabs: {
+        query: async () => [{ id: 1, url: 'https://www.youtube.com/' }],
+        sendMessage: sendMessageToContentScripts,
+      },
+    },
+  };
+};
 
-  test('should send toggle message from popup to content', () => {
-    // Create a function that simulates the popup's toggle message sending.
-    const sendToggleMessage = (enabled) => {
-      chrome.tabs.query({ url: '*://*.youtube.com/*' }, (tabs) => {
-        tabs.forEach((tab) => {
-          chrome.tabs.sendMessage(tab.id, {
-            action: 'toggleBlocking',
-            enabled,
-          });
-        });
-      });
-    };
+const renderPopupDOM = () => {
+  document.body.innerHTML = `
+    <button id="themeToggle"></button>
+    <button id="toggle" class="switch active" role="switch" aria-checked="true"></button>
+    <div id="totalBlocked">0</div>
+    <div id="sessionBlocked">0</div>
+    <div id="timeSaved">0 seconds</div>
+    <button id="resetCount"></button>
+    <section id="feed">
+      <ytd-video-renderer id="shorts-video">
+        <a href="/shorts/123">Shorts Video</a>
+      </ytd-video-renderer>
+      <ytd-video-renderer id="regular-video">
+        <a href="/watch?v=456">Regular Video</a>
+      </ytd-video-renderer>
+    </section>
+  `;
+};
 
-    // Trigger the toggle to disable blocking.
-    sendToggleMessage(false);
+const ORIGINAL_GLOBALS = {
+  window: global.window,
+  document: global.document,
+  location: global.location,
+  chrome: global.chrome,
+  mutationObserver: global.MutationObserver,
+};
 
-    // Verify that the correct message was sent to the content script.
-    expect(messages).toHaveLength(1);
-    expect(messages[0]).toEqual({
-      action: 'toggleBlocking',
-      enabled: false,
-    });
-  });
+const createMutationObserverFallback = () => {
+  return class MutationObserverFallback {
+    constructor(callback) {
+      this.callback = callback;
+      this.target = null;
+      this.listener = null;
+    }
 
-  test('should handle toggle message in content script', () => {
-    // Set up the content script's state and message handler.
-    let contentEnabled = true;
-    let reloaded = false;
+    observe(target) {
+      this.target = target;
+      this.listener = () => {
+        setTimeout(() => {
+          this.callback([{ type: 'childList', target }], this);
+        }, 0);
+      };
+      target.addEventListener('DOMNodeInserted', this.listener);
+    }
 
-    const handleMessage = (request) => {
-      if (request.action === 'toggleBlocking') {
-        contentEnabled = request.enabled;
-        chrome.storage.local.set({ enabled: contentEnabled }, () => {
-          reloaded = true;
-        });
+    disconnect() {
+      if (this.target && this.listener) {
+        this.target.removeEventListener('DOMNodeInserted', this.listener);
       }
-    };
+    }
+  };
+};
 
-    // Simulate receiving a toggle message to disable blocking.
-    handleMessage({ action: 'toggleBlocking', enabled: false });
+describe('Popup-Content Integration', () => {
+  let reloadCalled;
+  let harness;
 
-    // Verify that the state was updated and a reload was triggered.
-    expect(contentEnabled).toBe(false);
-    expect(storage.enabled).toBe(false);
-    expect(reloaded).toBe(true);
-  });
+  beforeEach(() => {
+    const testWindow = new Window();
+    global.window = testWindow;
+    global.document = testWindow.document;
+    global.location = testWindow.location;
+    global.HTMLElement = testWindow.HTMLElement;
+    const MutationObserverImpl = testWindow.MutationObserver || createMutationObserverFallback();
+    global.MutationObserver = MutationObserverImpl;
+    testWindow.MutationObserver = MutationObserverImpl;
 
-  test('should sync storage between popup and content', () => {
-    // Set up storage with extension state and blocked count.
-    storage = {
-      enabled: true,
-      totalBlockedCount: 10,
-    };
+    try {
+      window.location.href = 'https://www.youtube.com/';
+    } catch {
+      // Ignore URL assignment failures in test environment.
+    }
 
-    // Simulate the popup reading data from storage.
-    let popupData = {};
-    chrome.storage.local.get(['enabled', 'totalBlockedCount'], (result) => {
-      popupData = result;
-    });
-
-    // Verify that the popup receives the same data that was stored.
-    expect(popupData.enabled).toBe(true);
-    expect(popupData.totalBlockedCount).toBe(10);
-  });
-
-  test('should handle storage updates for counter', () => {
-    // Create a function that updates the blocked count in storage.
-    const updateBlockedCount = (count) => {
-      chrome.storage.local.get(['totalBlockedCount'], (result) => {
-        const newTotal = (result.totalBlockedCount || 0) + count;
-        chrome.storage.local.set({ totalBlockedCount: newTotal });
+    reloadCalled = false;
+    try {
+      window.location.reload = () => {
+        reloadCalled = true;
+      };
+    } catch {
+      Object.defineProperty(window.location, 'reload', {
+        value: () => {
+          reloadCalled = true;
+        },
+        configurable: true,
       });
-    };
+    }
 
-    // Perform multiple counter updates to test accumulation.
-    updateBlockedCount(5);
-    updateBlockedCount(3);
+    harness = createApiHarness();
+    global.chrome = harness.chrome;
+    window.browserCompat = harness.browserCompat;
 
-    // Verify that the counts are properly accumulated in storage.
-    expect(storage.totalBlockedCount).toBe(8);
+    renderPopupDOM();
+  });
+
+  afterEach(() => {
+    global.window = ORIGINAL_GLOBALS.window;
+    global.document = ORIGINAL_GLOBALS.document;
+    global.location = ORIGINAL_GLOBALS.location;
+    global.chrome = ORIGINAL_GLOBALS.chrome;
+    global.MutationObserver = ORIGINAL_GLOBALS.mutationObserver;
+  });
+
+  test('propagates popup toggle message to content script and persists state', async () => {
+    eval(contentScript);
+    eval(popupScript);
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await waitForAsyncWork();
+
+    document.getElementById('toggle').click();
+    await waitForAsyncWork();
+
+    expect(harness.storageData.enabled).toBe(false);
+    expect(reloadCalled).toBe(true);
+    expect(harness.sentMessages.some((entry) => entry.message.action === 'toggleBlocking')).toBe(
+      true
+    );
+  });
+
+  test('updates popup counters after content script removes Shorts', async () => {
+    eval(contentScript);
+    eval(popupScript);
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await waitForAsyncWork();
+    await waitForAsyncWork();
+
+    const totalBlocked = Number(document.getElementById('totalBlocked').textContent);
+    const sessionBlocked = Number(document.getElementById('sessionBlocked').textContent);
+
+    expect(harness.storageData.totalBlockedCount).toBeGreaterThan(0);
+    expect(totalBlocked).toBe(harness.storageData.totalBlockedCount);
+    expect(sessionBlocked).toBeGreaterThanOrEqual(0);
+    expect(document.getElementById('shorts-video')).toBeNull();
+    expect(document.getElementById('regular-video')).toBeTruthy();
+  });
+
+  test('resets counters in both popup and shared storage', async () => {
+    harness = createApiHarness({
+      enabled: true,
+      totalBlockedCount: 12,
+      sessionStartCount: 5,
+      theme: 'light',
+    });
+    global.chrome = harness.chrome;
+    window.browserCompat = harness.browserCompat;
+    renderPopupDOM();
+
+    eval(contentScript);
+    eval(popupScript);
+    document.dispatchEvent(new window.Event('DOMContentLoaded'));
+    await waitForAsyncWork();
+
+    document.getElementById('resetCount').click();
+    await waitForAsyncWork();
+
+    expect(harness.storageData.totalBlockedCount).toBe(0);
+    expect(harness.storageData.sessionStartCount).toBe(0);
+    expect(document.getElementById('totalBlocked').textContent).toBe('0');
+    expect(document.getElementById('sessionBlocked').textContent).toBe('0');
+    expect(document.getElementById('timeSaved').textContent).toBe('0 seconds');
   });
 });

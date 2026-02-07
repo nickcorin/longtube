@@ -1,93 +1,178 @@
-import { test, expect, describe, beforeEach } from 'bun:test';
+import { test, expect, describe, beforeEach, afterEach } from 'bun:test';
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { Window } from 'happy-dom';
 
-/**
- * Unit tests for the chip removal functionality of the LongTube extension.
- * These tests verify that YouTube's filter chips (specifically "Shorts" chips)
- * are correctly identified and removed from the page while preserving other content.
- */
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const contentScript = readFileSync(join(__dirname, '../../src/content.js'), 'utf8');
+
+const waitForAsyncWork = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 35));
+};
+
+const ORIGINAL_GLOBALS = {
+  window: global.window,
+  document: global.document,
+  location: global.location,
+  chrome: global.chrome,
+  mutationObserver: global.MutationObserver,
+};
+
+const createMutationObserverFallback = () => {
+  return class MutationObserverFallback {
+    constructor(callback) {
+      this.callback = callback;
+      this.target = null;
+      this.listener = null;
+    }
+
+    observe(target) {
+      this.target = target;
+      this.listener = () => {
+        setTimeout(() => {
+          this.callback([{ type: 'childList', target }], this);
+        }, 0);
+      };
+      target.addEventListener('DOMNodeInserted', this.listener);
+    }
+
+    disconnect() {
+      if (this.target && this.listener) {
+        this.target.removeEventListener('DOMNodeInserted', this.listener);
+      }
+    }
+  };
+};
+
+const createChromeMock = (storageData) => ({
+  storage: {
+    local: {
+      get: (keys, callback) => {
+        const keyArray = Array.isArray(keys) ? keys : [keys];
+        const result = {};
+        keyArray.forEach((key) => {
+          if (Object.prototype.hasOwnProperty.call(storageData, key)) {
+            result[key] = storageData[key];
+          }
+        });
+
+        if (callback) {
+          callback(result);
+          return undefined;
+        }
+        return Promise.resolve(result);
+      },
+      set: (items, callback) => {
+        Object.assign(storageData, items);
+        if (callback) {
+          callback();
+          return undefined;
+        }
+        return Promise.resolve();
+      },
+    },
+    onChanged: {
+      addListener: () => {},
+      removeListener: () => {},
+    },
+  },
+  runtime: {
+    onMessage: {
+      addListener: () => {},
+      removeListener: () => {},
+    },
+    lastError: null,
+  },
+});
+
+const setupPage = (html) => {
+  const window = new Window();
+  global.window = window;
+  global.document = window.document;
+  global.location = window.location;
+  global.HTMLElement = window.HTMLElement;
+  const MutationObserverImpl = window.MutationObserver || createMutationObserverFallback();
+  global.MutationObserver = MutationObserverImpl;
+  window.MutationObserver = MutationObserverImpl;
+
+  document.documentElement.innerHTML = '<head></head><body></body>';
+  document.body.innerHTML = html;
+
+  const storageData = { enabled: true, totalBlockedCount: 0 };
+  global.chrome = createChromeMock(storageData);
+  delete window.browserCompat;
+
+  return storageData;
+};
 
 describe('Chip Removal Logic', () => {
   beforeEach(() => {
-    // Clear the DOM before each test to ensure a clean testing environment.
-    document.body.innerHTML = '';
+    setupPage('');
   });
 
-  test('should remove Shorts chips by text content', () => {
-    // Create a mock YouTube page with various filter chips including Shorts.
-    document.body.innerHTML = `
-      <yt-chip-cloud-chip-renderer>
+  afterEach(() => {
+    global.window = ORIGINAL_GLOBALS.window;
+    global.document = ORIGINAL_GLOBALS.document;
+    global.location = ORIGINAL_GLOBALS.location;
+    global.chrome = ORIGINAL_GLOBALS.chrome;
+    global.MutationObserver = ORIGINAL_GLOBALS.mutationObserver;
+  });
+
+  test('removes Shorts chips and preserves other chips', async () => {
+    setupPage(`
+      <yt-chip-cloud-chip-renderer id="chip-shorts">
         <span>Shorts</span>
       </yt-chip-cloud-chip-renderer>
-      <yt-chip-cloud-chip-renderer>
+      <yt-chip-cloud-chip-renderer id="chip-music">
         <span>Music</span>
       </yt-chip-cloud-chip-renderer>
-      <div class="ytChipShapeChip">shorts</div>
-      <div class="ytChipShapeChip">Gaming</div>
-    `;
+      <div class="ytChipShapeChip" id="chip-shorts-alt">shorts</div>
+      <div class="ytChipShapeChip" id="chip-gaming">Gaming</div>
+    `);
 
-    // Execute the chip removal logic that identifies and removes Shorts chips.
-    const removedElements = new WeakSet();
-    let removedCount = 0;
+    eval(contentScript);
+    await waitForAsyncWork();
 
-    document.querySelectorAll('yt-chip-cloud-chip-renderer, .ytChipShapeChip').forEach((chip) => {
-      if (chip.textContent?.trim().toLowerCase() === 'shorts') {
-        const chipToRemove = chip.closest('yt-chip-cloud-chip-renderer') || chip;
-        if (!removedElements.has(chipToRemove)) {
-          removedElements.add(chipToRemove);
-          chipToRemove.remove();
-          removedCount++;
-        }
-      }
-    });
-
-    // Verify that only the Shorts chips were removed while other chips remain.
-    expect(removedCount).toBe(2);
-    expect(document.querySelectorAll('yt-chip-cloud-chip-renderer').length).toBe(1);
-    expect(document.querySelectorAll('.ytChipShapeChip').length).toBe(1);
-    expect(document.body.textContent).toContain('Music');
-    expect(document.body.textContent).toContain('Gaming');
-    expect(document.body.textContent).not.toContain('Shorts');
-    expect(document.body.textContent).not.toContain('shorts');
+    expect(document.getElementById('chip-shorts')).toBeNull();
+    expect(document.getElementById('chip-shorts-alt')).toBeNull();
+    expect(document.getElementById('chip-music')).toBeTruthy();
+    expect(document.getElementById('chip-gaming')).toBeTruthy();
   });
 
-  test('should handle different text cases and whitespace', () => {
-    // Create chips with various text formats to test case-insensitive matching.
-    document.body.innerHTML = `
-      <yt-chip-cloud-chip-renderer>  SHORTS  </yt-chip-cloud-chip-renderer>
-      <yt-chip-cloud-chip-renderer>Shorts</yt-chip-cloud-chip-renderer>
-      <yt-chip-cloud-chip-renderer>ShoRtS</yt-chip-cloud-chip-renderer>
-      <yt-chip-cloud-chip-renderer>Short Videos</yt-chip-cloud-chip-renderer>
-    `;
+  test('matches Shorts text case-insensitively and trims whitespace', async () => {
+    setupPage(`
+      <yt-chip-cloud-chip-renderer id="chip-upper">  SHORTS  </yt-chip-cloud-chip-renderer>
+      <yt-chip-cloud-chip-renderer id="chip-mixed">ShoRtS</yt-chip-cloud-chip-renderer>
+      <yt-chip-cloud-chip-renderer id="chip-nonshort">Short Videos</yt-chip-cloud-chip-renderer>
+    `);
 
-    // Execute the removal logic with case-insensitive matching.
-    let removedCount = 0;
-    document.querySelectorAll('yt-chip-cloud-chip-renderer').forEach((chip) => {
-      if (chip.textContent?.trim().toLowerCase() === 'shorts') {
-        chip.remove();
-        removedCount++;
-      }
-    });
+    eval(contentScript);
+    await waitForAsyncWork();
 
-    // Verify that all case variations of "shorts" were removed but similar text was preserved.
-    expect(removedCount).toBe(3);
-    expect(document.querySelectorAll('yt-chip-cloud-chip-renderer').length).toBe(1);
-    expect(document.body.textContent).toContain('Short Videos');
+    expect(document.getElementById('chip-upper')).toBeNull();
+    expect(document.getElementById('chip-mixed')).toBeNull();
+    expect(document.getElementById('chip-nonshort')).toBeTruthy();
   });
 
-  test('should handle nested elements in chips', () => {
-    // Create chips with YouTube's actual nested structure to test text extraction.
-    document.body.innerHTML = `
-      <yt-chip-cloud-chip-renderer>
+  test('removes nested Shorts chips from YouTube-like markup', async () => {
+    setupPage(`
+      <yt-chip-cloud-chip-renderer id="chip-nested">
         <yt-formatted-string>
           <span>Shorts</span>
         </yt-formatted-string>
       </yt-chip-cloud-chip-renderer>
-    `;
+      <yt-chip-cloud-chip-renderer id="chip-other">
+        <yt-formatted-string>
+          <span>Podcasts</span>
+        </yt-formatted-string>
+      </yt-chip-cloud-chip-renderer>
+    `);
 
-    // Extract the chip element to verify text content detection works with nested elements.
-    const chip = document.querySelector('yt-chip-cloud-chip-renderer');
+    eval(contentScript);
+    await waitForAsyncWork();
 
-    // Verify that the text content is correctly extracted from nested elements.
-    expect(chip.textContent.trim()).toBe('Shorts');
+    expect(document.getElementById('chip-nested')).toBeNull();
+    expect(document.getElementById('chip-other')).toBeTruthy();
   });
 });

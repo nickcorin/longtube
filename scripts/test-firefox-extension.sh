@@ -2,7 +2,10 @@
 
 # Script to test if the Firefox extension loads properly using web-ext
 
-cd "$(dirname "$0")/.."
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$repo_root"
 
 echo "Building extension..."
 bun run build

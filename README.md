@@ -21,62 +21,80 @@ YouTube without Shorts.
   <img src="docs/images/screenshot-popup-1280x800.png" alt="LongTube Extension Popup">
 </div>
 
-## 🎯 What is LongTube?
+## Overview
 
-LongTube is a browser extension that removes all short-form content from your YouTube UI.
+LongTube is a browser extension that reduces short-form distractions on YouTube.
+When enabled, it removes Shorts entry points in the interface and redirects direct Shorts URLs.
 
-Short-form content is engineered to be addictive. It hijacks your attention and leaves you doom-scrolling brain-rot
-content.
+The goal is simple: keep YouTube focused on long-form viewing.
 
-LongTube is an opt-out for the times you want to focus on long-form content.
+## What LongTube Does
 
-## 🚀 Features
+- Injects blocking styles at page start on `youtube.com`.
+- Removes common Shorts surfaces from the DOM, including shelves, links, navigation entries, and chips.
+- Redirects Shorts pages when the blocker is enabled.
+- Tracks total blocked items and session progress in extension storage.
+- Provides a popup with enable/disable toggle, counters, and theme toggle.
 
-- **🚫 Removes all Shorts** from YouTube's UI.
-- **↪️ Redirects** away from Shorts URLs.
-- **📊 Tracks** how many Shorts you've avoided.
-- **🔓 Open source** forever.
+## Installation
 
-## 📦 Installation
+### Store Installs
 
-### Chromium Browsers (Chrome/Edge/Brave)
+- Chrome Web Store: [LongTube](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf)
+- Firefox Add-ons: [LongTube](https://addons.mozilla.org/en-US/firefox/addon/longtube)
 
-Install directly from the [Chrome Web Store](https://chromewebstore.google.com/detail/longtube/monkacdphpcklckngjekpkbjkolemnjf).
+### Local Development Install
 
-### Gecko Browsers (Firefox/Zen)
+Install dependencies and build artifacts:
 
-Install directly from [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/longtube).
+```bash
+bun install
+bun run build
+```
 
-### Manual Installation
+Load in Chromium browsers:
 
-Download the latest release from [GitHub Releases](https://github.com/nickcorin/longtube/releases).
+1. Open `chrome://extensions`.
+2. Enable Developer mode.
+3. Click `Load unpacked`.
+4. Select `/Users/nick/code/nickcorin/longtube/build/chrome`.
 
-**Chromium Browsers (Chrome/Edge/Brave):**
+Load in Firefox:
 
-1. Navigate to your browser's extensions page (e.g., `chrome://extensions`).
-2. Enable "Developer mode".
-3. Drag and drop the `chrome.zip` file into the window.
+1. Open `about:debugging#/runtime/this-firefox`.
+2. Click `Load Temporary Add-on`.
+3. Select `/Users/nick/code/nickcorin/longtube/build/firefox/manifest.json`.
 
-**Gecko Browsers (Firefox/Zen):**
+Release bundles are produced in `/Users/nick/code/nickcorin/longtube/dist` as `chrome.zip` and `firefox.zip`.
 
-1. Navigate to `about:addons`.
-2. Click the gear icon and select "Install Add-on From File".
-3. Select the `firefox.xpi` file.
+## Usage
 
-## 🤝 Contributing
+1. Open the extension popup.
+2. Use the toggle to enable or disable blocking.
+3. Use `Reset Stats` to clear counters.
+4. If a YouTube tab is open, changes are applied immediately and the page refreshes to reset view state.
 
-I vibe-coded this for myself because I was tired of being force fed short-form content without the ability to opt-out. It happens to work really well, so I thought I'd share it with others.
+## Privacy
+
+LongTube is intentionally minimal:
+
+- Uses `storage` permission to persist extension settings and counters.
+- Runs only on YouTube pages matched by `*://*.youtube.com/*`.
+- Does not require account access and does not send analytics data from the extension code.
+
+## Contributing
+
+I built this for myself because I was tired of being force-fed short-form content without a real opt-out.
+It worked well, so I shared it.
 
 Feel free to use it, share it, or contribute.
 
-## 📄 License
+If you want to contribute changes:
+
+Open an issue or PR with a clear problem statement.
+Keep behavior changes small and easy to review.
+Run `bun run lint`, `bun run format:check`, and `bun run test` before submitting.
+
+## License
 
 MIT.
-
----
-
-<div align="center">
-
-**Focus on the content you want to see.**
-
-</div>
